@@ -1,0 +1,87 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "FSH",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#urls"
+		},
+		{
+			"include": "#comments"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.fsh",
+					"match": "\\b(Profile|Extension|SimpleElement|ComplexElement|Parent|Mixin|Mixins|Description|Datatype|Property|Element|Abstract|Entry|Group|Rules|Instance|InstanceOf|Invariant|Expression|Severity|Mapping|Source|Target|Metadata|Slice|ValueSet|Language|Alias)\\b"
+				},
+				{
+					"name": "keyword.reserved.fsh",
+					"match": "\\b(from|contains|only|obeys|includes|or|and|required|preferred|extensible|MS|SU)\\b"
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.fsh",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.fsh",
+					"match": "\\\\."
+				}
+			]
+		},
+		"urls": {
+			"name": "url.fsh",
+			"patterns": [
+				{
+					"match": "\\b(https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&\\/\\/=]*))\\b",
+					"captures": {
+						"0": {
+							"name": "string.unquoted.url.fsh"
+						}
+					}
+				}
+			]
+		},
+		"comments": {
+			"name": "comment.fsh",
+			"patterns": [
+				{
+					"begin": "(\\s|^)//",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.comment.fsh"
+						}
+					},
+					"end": "$",
+					"name": "comment.line.double-slash.fsh"
+				},
+				{
+					"name": "comment.block.fsh",
+					"begin": "/\\*",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.comment.fsh"
+						}
+					},
+					"end": "\\*/",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.definition.comment.fsh"
+						}
+					}
+				}
+			]
+		}
+	},
+	"scopeName": "source.fsh"
+}

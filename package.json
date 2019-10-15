@@ -1,0 +1,41 @@
+{
+    "name": "vscode-language-fsh",
+    "displayName": "vscode-language-fsh",
+    "description": "VSCode FHIR Shorthand (FSH) Language Support",
+    "version": "1.0.0",
+    "author": "The MITRE Corporation",
+	"license": "Apache-2.0",
+	"publisher": "kmahalingam",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/standardhealth/vscode-language-fsh"
+	},
+    "engines": {
+        "vscode": "^1.39.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "fsh",
+                "aliases": [
+                    "FSH",
+                    "fsh"
+                ],
+                "extensions": [
+                    ".fsh"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "fsh",
+                "scopeName": "source.fsh",
+                "path": "./syntaxes/fsh.tmLanguage.json"
+            }
+        ]
+    }
+}
