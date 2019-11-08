@@ -12,6 +12,12 @@
 			"include": "#urls"
 		},
 		{
+			"include": "#booleans"
+		},
+		{
+			"include": "#codes"
+		},
+		{
 			"include": "#comments"
 		}
 	],
@@ -20,11 +26,15 @@
 			"patterns": [
 				{
 					"name": "keyword.control.fsh",
-					"match": "\\b(Profile|Extension|SimpleElement|ComplexElement|Parent|Mixin|Mixins|Description|Datatype|Property|Element|Abstract|Entry|Group|Rules|Instance|InstanceOf|Invariant|Expression|Severity|Mapping|Source|Target|Metadata|Slice|ValueSet|Language|Alias)\\b"
+					"match": "\\b(Profile|Extension|SimpleElement|ComplexElement|Parent|Mixin|Mixins|Id|Title|Description|Datatype|Property|Element|Abstract|Entry|Group|Rules|Instance|InstanceOf|Invariant|Expression|Severity|XPath|Mapping|Source|Target|Metadata|Slice|ValueSet|Language|Alias)\\b"
 				},
 				{
 					"name": "keyword.reserved.fsh",
 					"match": "\\b(from|contains|only|obeys|includes|or|and|required|preferred|extensible|MS|SU)\\b"
+				},
+				{
+					"name": "keyword.tokens.fsh",
+					"match": "\\?!|\\*"
 				}
 			]
 		},
@@ -49,6 +59,22 @@
 							"name": "string.unquoted.url.fsh"
 						}
 					}
+				}
+			]
+		},
+		"booleans": {
+			"patterns": [
+				{
+					"name": "constant.numeric.fsh",
+					"match": "\\b(true|false)\\b"
+				}
+			]
+		},
+		"codes": {
+			"patterns": [ 
+				{
+					"name": "constant.numeric.fsh",
+					"match": "#[^\\s]*"
 				}
 			]
 		},
