@@ -30,7 +30,7 @@
 				},
 				{
 					"name": "keyword.reserved.fsh",
-					"match": "\\b(from|contains|only|obeys|includes|or|and|required|preferred|extensible|MS|SU)\\b"
+					"match": "\\b(from|contains|only|obeys|includes|or|and|required|preferred|extensible|MS|SU|is-a|is-not-a)\\b"
 				},
 				{
 					"name": "keyword.tokens.fsh",
