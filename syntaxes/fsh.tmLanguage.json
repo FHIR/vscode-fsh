@@ -26,15 +26,19 @@
 			"patterns": [
 				{
 					"name": "keyword.control.fsh",
-					"match": "\\b(Alias|CodeSystem|Expression|Extension|Description|Id|Instance|InstanceOf|Invariant|Mapping|Mixins|Parent|Profile|RuleSet|Severity|Source|Target|Title|Usage|ValueSet|XPath)(?=:)\\b"
+					"match": "\\b(Alias|CodeSystem|Expression|Extension|Description|Id|Instance|InstanceOf|Invariant|Mapping|Mixins|Parent|Profile|RuleSet|Severity|Source|Target|Title|Usage|ValueSet|XPath)(?=\\s*:)\\b"
 				},
 				{
 					"name": "keyword.reserved.fsh",
-					"match": "\\b(and|codes|contains|example|exclude|extensible|from|includes|is-a|is-not-a|named|obeys|only|or|preferred|system|required|units|valueset|where|D|MS|N|SU|TU)\\b"
+					"match": "\\b(?<=\\s)(and|codes|contains|exclude|from|includes|is-a|is-not-a|named|obeys|only|or|system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
+				},
+				{
+					"name": "keyword.reserved.fsh",
+					"match": "(\\(\\s*)(example|extensible|preferred|required)(\\s*\\))"
 				},
 				{
 					"name": "keyword.tokens.fsh",
-					"match": "\\?!|\\*|->|=|:"
+					"match": "\\*|->|:=|=|:"
 				}
 			]
 		},
