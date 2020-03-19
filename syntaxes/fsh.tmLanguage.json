@@ -34,11 +34,11 @@
 				},
 				{
 					"name": "keyword.reserved.fsh",
-					"match": "(\\(\\s*)(example|extensible|preferred|required)(\\s*\\))"
+					"match": "(\\(\\s*)(exactly|example|extensible|preferred|required)(\\s*\\))"
 				},
 				{
 					"name": "keyword.tokens.fsh",
-					"match": "\\*|->|:=|=|:"
+					"match": "\\*|->|=|:"
 				}
 			]
 		},
