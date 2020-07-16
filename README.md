@@ -12,7 +12,7 @@ be automatically implemented.
 
 ### Syntax Highlighting
 
-This extension provides syntax highlighting for CIMPL. When editing a CIMPL file,
+This extension provides syntax highlighting for FSH. When editing a FSH file,
 the syntax should be automatically highlighted.
 
 ## Compile and Run (for Developers)
