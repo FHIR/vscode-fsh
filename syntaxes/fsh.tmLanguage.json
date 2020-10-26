@@ -30,7 +30,7 @@
 				},
 				{
 					"name": "keyword.reserved.fsh",
-					"match": "\\b(?<=\\s)(and|codes|contains|exclude|from|include|is-a|is-not-a|descendent-of|regex|in|not-in|generalizes|exists|named|obeys|only|or|system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
+					"match": "\\b(?<=\\s)(and|codes|contains|descendent-of|exclude|exists|from|generalizes|include|in|insert|is-a|is-not-a|named|not-in|obeys|only|or|regex|system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
 				},
 				{
 					"name": "keyword.reserved.fsh",
