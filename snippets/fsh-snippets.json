@@ -1,0 +1,63 @@
+{
+	"FSH Profile": {
+		"prefix": "pro",
+		"body": [
+			"Profile: $1",
+			"Parent: $2",
+			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
+			"Title: \"${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}\"",
+			"Description: \"$5\"",
+			"* $0"
+		],
+		"description": "Create a FSH Profile"
+	},
+
+	"FSH Extension": {
+		"prefix": "ext",
+		"body": [
+			"Extension: $1",
+			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
+			"Title: \"${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}\"",
+			"Description: \"$2\"",
+			"* $0"
+		],
+		"description": "Create a FSH Extension"
+	},
+
+	"FSH Value Set": {
+		"prefix": "vs",
+		"body": [
+			"ValueSet: $1",
+			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
+			"Title: \"${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}\"",
+			"Description: \"$2\"",
+			"* $0"
+		],
+		"description": "Create a FSH ValueSet"
+	},
+
+	"FSH Code System": {
+		"prefix": "cs",
+		"body": [
+			"CodeSystem: $1",
+			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
+			"Title: \"${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}\"",
+			"Description: \"$2\"",
+			"* $0"
+		],
+		"description": "Create a FSH Code System"
+	},
+
+	"FSH Instance": {
+		"prefix": "inst",
+		"body": [
+			"Instance: $1",
+			"InstanceOf: $2",
+			"Usage: ${3|#example,#definition,#inline|}",
+			"Title: \"${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}\"",
+			"Description: \"$5\"",
+			"* $0"
+		],
+		"description": "Create a FSH Instance"
+	}
+}
