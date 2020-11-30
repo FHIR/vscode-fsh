@@ -1,6 +1,6 @@
 {
 	"FSH Profile": {
-		"prefix": "pro",
+		"prefix": ["pro", "Pro"],
 		"body": [
 			"Profile: $1",
 			"Parent: $2",
@@ -13,7 +13,7 @@
 	},
 
 	"FSH Extension": {
-		"prefix": "ext",
+		"prefix": ["ext", "Ext"],
 		"body": [
 			"Extension: $1",
 			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
@@ -25,7 +25,7 @@
 	},
 
 	"FSH Value Set": {
-		"prefix": "vs",
+		"prefix": ["vs", "VS", "val", "Val"],
 		"body": [
 			"ValueSet: $1",
 			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
@@ -37,7 +37,7 @@
 	},
 
 	"FSH Code System": {
-		"prefix": "cs",
+		"prefix": ["cs", "CS", "cod", "Cod"],
 		"body": [
 			"CodeSystem: $1",
 			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
