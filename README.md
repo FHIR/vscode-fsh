@@ -12,8 +12,29 @@ be automatically implemented.
 
 ### Syntax Highlighting
 
-This extension provides syntax highlighting for FSH. When editing a FSH file,
-the syntax should be automatically highlighted.
+![FSH Syntax](images/docs/fsh-syntax.jpg)
+
+FSH files automatically have syntax highlighting applied. This allows for easier reading and writing of FHIR Shorthand.
+
+## Snippets
+
+![FSH Snippets](images/docs/fsh-snippets.gif)
+
+FSH Snippets make creating new FSH items a breeze! Snippets automatically add relevant keywords and placeholders so you can easily
+enter all of the recommended metadata for a FSH definition.  Snippets will even auto-create your `Id` and `Title` for you based on the
+name.
+
+To use snippets, type one of the trigger phrases, hit the &lt;TAB&gt; or &lt;ENTER&gt; key, type in the first field value, and hit
+the &lt;TAB&gt; key to move to the next placeholder.  All FSH snippets always stop at the first rule in the definition.
+
+| Trigger | FSH Item   | Keywords |
+| ------- | ---------- | -------- |
+| `pro`   | Profile    | Profile, Parent, Id (auto), Title (auto), Description |
+| `ext`   | Extension  | Extension, Id (auto), Title (auto), Description |
+| `vs`    | ValueSet   | ValueSet, Id (auto), Title (auto), Description |
+| `cs`    | CodeSystem | CodeSystem, Id (auto), Title (auto), Description |
+| `inst`  | Instance   | Instance, InstanceOf, Usage (choice), Title (auto), Description |
+
 
 ## Compile and Run (for Developers)
 

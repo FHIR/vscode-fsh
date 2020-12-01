@@ -36,6 +36,12 @@
                 "scopeName": "source.fsh",
                 "path": "./syntaxes/fsh.tmLanguage.json"
             }
+        ],
+        "snippets": [
+            {
+                "language": "fsh",
+                "path": "./snippets/fsh-snippets.json"
+            }
         ]
     }
 }
