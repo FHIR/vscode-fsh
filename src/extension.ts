@@ -15,8 +15,10 @@ class FshDefinitionProvider implements DefinitionProvider {
   public provideDefinition(document: TextDocument, position: Position): Thenable<Location> {
     return new Promise((resolve, reject) => {
       try {
-        // what is the name of the thing we want to get a definition of?
-        const name = document.getText(document.getWordRangeAtPosition(position));
+        // What is the name of the thing we want to get a definition of?
+        // An entity's name can have most any non-whitespace character in it,
+        // so use our own word regex instead of the default one.
+        const name = document.getText(document.getWordRangeAtPosition(position, /\S+/));
         const location: Location = getDefinitionLocation(name);
         resolve(location);
       } catch (e) {
@@ -53,7 +55,7 @@ function getDefinitionLocation(target: string): Location {
             return new Location(Uri.file(filepath), new Position(entity.alias().start.line - 1, 0));
           }
         } else if(entity.ruleSet()) {
-          if(target === entity.ruleSet().RULESET_REFERENCE().getText()) {
+          if(target === entity.ruleSet().RULESET_REFERENCE().getText().trim()) {
             return new Location(Uri.file(filepath), new Position(entity.ruleSet().start.line - 1, 0));
           }
         } else if(entity.paramRuleSet()) {
