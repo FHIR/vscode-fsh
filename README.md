@@ -61,3 +61,15 @@ To run any of these tasks, use `npm run`. For example:
 ```sh
 $ npm run build:watch
 ```
+
+## Updating the Grammar
+
+The `src/lang/` directory contains the FSH lexer and parser. When the FSH grammar changes, the files in this directory will need to be updated. These files are generated in the [SUSHI](https://github.com/FHIR/sushi) project by running ANTLR on the grammar definition files. The files are then copied from the SUSHI project to this project.
+The files to copy are:
+
+- FSH.tokens
+- FSHLexer.tokens
+- FSHLexer.js
+- FSHListener.js
+- FSHParser.js
+- FSHVisitor.js
