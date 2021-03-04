@@ -1,18 +1,22 @@
 import { CommonTokenStream, InputStream } from 'antlr4';
 import fs from 'fs';
-const { FSHLexer } = require('./lang/FSHLexer');
-const { FSHParser} = require('./lang/FSHParser');
+import { FSHLexer } from './lang/FSHLexer';
+import { FSHParser } from './lang/FSHParser';
 
 // implementation in this file heavily borrows from CIMPL extension:
 // https://github.com/standardhealth/vscode-language-cimpl
 
-export function getTreeForFile(filepath: string) {
-    const chars = new InputStream(fs.readFileSync(filepath).toString());
-    const lexer = new FSHLexer(chars);
-    lexer.removeErrorListeners();
-    const tokens = new CommonTokenStream(lexer);
-    const parser = new FSHParser(tokens);
-    parser.removeErrorListeners();
-    parser.buildParseTrees = true;
-    return parser.doc();
+export function getTreeForFile(filepath: string): any {
+  const chars = new InputStream(fs.readFileSync(filepath).toString());
+  const lexer = new FSHLexer(chars);
+  // @ts-ignore
+  lexer.removeErrorListeners();
+  // @ts-ignore
+  const tokens = new CommonTokenStream(lexer);
+  const parser = new FSHParser(tokens);
+  // @ts-ignore
+  parser.removeErrorListeners();
+  // @ts-ignore
+  parser.buildParseTrees = true;
+  return parser.doc();
 }

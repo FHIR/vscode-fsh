@@ -1,0 +1,4 @@
+.vscode
+out
+node_modules
+/src/lang

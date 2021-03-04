@@ -49,13 +49,24 @@
         ]
     },
     "scripts": {
-        "compile": "tsc -watch -p ./",
+        "build": "tsc -p ./",
+        "build:watch": "tsc -watch -p ./",
+        "lint": "tsc && eslint \"**/*.{js,ts}\"",
+        "lint:fix": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix",
+        "prettier": "prettier --check \"**/*.{js,ts}\"",
+        "prettier:fix": "prettier --write \"**/*.{js,ts}\"",
+        "check": "npm run lint && npm run prettier",
         "vscode:prepublish": "tsc -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install"
     },
     "devDependencies": {
         "@types/antlr4": "^4.7.2",
         "@types/node": "^14.14.25",
+        "@typescript-eslint/eslint-plugin": "^4.16.1",
+        "@typescript-eslint/parser": "^4.16.1",
+        "eslint": "^7.21.0",
+        "eslint-config-prettier": "^8.1.0",
+        "prettier": "^2.2.1",
         "typescript": "^4.2.2",
         "vscode": "^1.1.37"
     },
