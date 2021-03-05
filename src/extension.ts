@@ -22,7 +22,7 @@ class FshDefinitionProvider implements DefinitionProvider {
         // What is the name of the thing we want to get a definition of?
         // An entity's name can have most any non-whitespace character in it,
         // so use our own word regex instead of the default one.
-        const name = document.getText(document.getWordRangeAtPosition(position, /\S+/));
+        const name = document.getText(document.getWordRangeAtPosition(position, /[^\s\(\)]+/));
         const location: Location = getDefinitionLocation(name);
         resolve(location);
       } catch (e) {
