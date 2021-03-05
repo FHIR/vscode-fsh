@@ -35,6 +35,10 @@ the &lt;TAB&gt; key to move to the next placeholder. All FSH snippets always sto
 | `cs`    | CodeSystem | CodeSystem, Id (auto), Title (auto), Description                |
 | `inst`  | Instance   | Instance, InstanceOf, Usage (choice), Title (auto), Description |
 
+## Go to Definition
+
+FSH entity definitions within your workspace can be found from anywhere their name is used. To go to the entity definition, right-click on the entity name and select "Go to Definition" from the context menu. Or, you can press &lt;F12&gt; when your text cursor is on the entity name.
+
 ## Compile and Run (for Developers)
 
 - run `npm install` in this folder. This installs all necessary npm modules in both the
