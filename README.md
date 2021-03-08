@@ -47,7 +47,7 @@ FSH entity definitions within your workspace can be found from anywhere their na
 - Switch to the Debug viewlet.
 - Select `Extension` from the drop down.
 
-# NPM Tasks
+## NPM Tasks
 
 The following NPM tasks may be useful in development:
 | Task | Description |
