@@ -58,13 +58,18 @@ The following NPM tasks may be useful in development:
 | **lint:fix** | fixes lint errors when automatic fixes are available for them |
 | **prettier** | checks all src files to ensure they follow project formatting conventions |
 | **prettier:fix** | fixes prettier errors by rewriting files using project formatting conventions |
-| **check** | runs all the checks performed as part of ci (lint, prettier) |
+| **test** | runs the test suite |
+| **check** | runs all the checks performed as part of ci (lint, prettier, test) |
 
 To run any of these tasks, use `npm run`. For example:
 
 ```sh
 $ npm run build:watch
 ```
+
+### Note about testing
+
+The `test` task will often (but not always) produce an error if it is run while VSCode is open. If you receive this error, close VSCode and run the task from the command line.
 
 ## Updating the Grammar
 

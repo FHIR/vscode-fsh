@@ -19,10 +19,7 @@ class FshDefinitionProvider implements DefinitionProvider {
   public provideDefinition(document: TextDocument, position: Position): Thenable<Location> {
     return new Promise((resolve, reject) => {
       try {
-        // What is the name of the thing we want to get a definition of?
-        // An entity's name can have most any non-whitespace character in it,
-        // so use our own word regex instead of the default one.
-        const name = document.getText(document.getWordRangeAtPosition(position, /[^\s\(\)]+/));
+        const name = getTargetName(document, position);
         const location: Location = getDefinitionLocation(name);
         resolve(location);
       } catch (e) {
@@ -38,7 +35,14 @@ export function activate(context: ExtensionContext): void {
   );
 }
 
-function getDefinitionLocation(target: string): Location {
+export function getTargetName(document: TextDocument, position: Position): string {
+  // What is the name of the thing we want to get a definition of?
+  // An entity's name can have most any non-whitespace character in it,
+  // so use our own word regex instead of the default one.
+  return document.getText(document.getWordRangeAtPosition(position, /[^\s\(\)]+/));
+}
+
+export function getDefinitionLocation(target: string): Location {
   if (!(workspace && workspace.workspaceFolders)) {
     return;
   }
