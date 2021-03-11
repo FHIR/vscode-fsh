@@ -104,10 +104,6 @@ suite('Extension Test Suite', () => {
   });
 
   suite('#getTargetName', () => {
-    setup(() => {
-      console.log('text docs');
-      vscode.workspace.textDocuments.forEach(doc => console.log(doc.uri.fsPath));
-    });
     test('should get a name with alphanumeric characters', async () => {
       // MyPatient
       // profiles1.fsh, line 5, col 15
