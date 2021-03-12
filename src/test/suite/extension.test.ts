@@ -147,5 +147,16 @@ suite('Extension Test Suite', () => {
       const name = myExtension.getTargetName(document, position);
       assert.strictEqual(name, 'MyPatient');
     });
+
+    test('should get the name of a system in a concept', async () => {
+      // IC
+      // valuesets.fsh, line 7, col 12
+      const fileUri = await vscode.workspace.findFiles('valuesets.fsh');
+      assert.strictEqual(fileUri.length, 1);
+      const document = await vscode.workspace.openTextDocument(fileUri[0]);
+      const position = new vscode.Position(6, 11);
+      const name = myExtension.getTargetName(document, position);
+      assert.strictEqual(name, 'IC');
+    });
   });
 });

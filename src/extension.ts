@@ -39,7 +39,7 @@ export function getTargetName(document: TextDocument, position: Position): strin
   // What is the name of the thing we want to get a definition of?
   // An entity's name can have most any non-whitespace character in it,
   // so use our own word regex instead of the default one.
-  return document.getText(document.getWordRangeAtPosition(position, /[^\s\(\)]+/));
+  return document.getText(document.getWordRangeAtPosition(position, /[^\s\(\)#]+/));
 }
 
 export function getDefinitionLocation(target: string): Location {
