@@ -37,6 +37,8 @@ the &lt;TAB&gt; key to move to the next placeholder. All FSH snippets always sto
 
 ## Go to Definition
 
+![FSH Go to Definition](images/docs/fsh-go-to-definition.gif)
+
 FSH entity definitions within your workspace can be found from anywhere their name is used. To go to the entity definition, right-click on the entity name and select "Go to Definition" from the context menu. Or, you can press &lt;F12&gt; when your text cursor is on the entity name.
 
 ## Compile and Run (for Developers)
