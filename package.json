@@ -46,7 +46,22 @@
                 "language": "fsh",
                 "path": "./snippets/fsh-snippets.json"
             }
-        ]
+        ],
+        "commands": [
+            {
+                "command": "extension.openFhir",
+                "title": "Open FHIR Documentation"
+            }
+        ],
+        "menus": {
+            "editor/context": [
+                {
+                    "command": "extension.openFhir",
+                    "group": "navigation",
+                    "when": "editorLangId == fsh"
+                }
+            ]
+        }
     },
     "scripts": {
         "build": "tsc -p ./",

@@ -1,5 +1,7 @@
 import {
   languages,
+  commands,
+  window,
   ExtensionContext,
   DocumentFilter,
   DefinitionProvider,
@@ -29,10 +31,20 @@ class FshDefinitionProvider implements DefinitionProvider {
   }
 }
 
+export function openFhirDocumentation(): void {
+  const document = window.activeTextEditor.document;
+  const startPosition = window.activeTextEditor.selection.start;
+  if (document && startPosition) {
+    const name = getTargetName(document, startPosition);
+    window.showInformationMessage(`Opening FHIR documentation for ${name}`);
+  }
+}
+
 export function activate(context: ExtensionContext): void {
   context.subscriptions.push(
     languages.registerDefinitionProvider(FSH_MODE, new FshDefinitionProvider())
   );
+  commands.registerCommand('extension.openFhir', openFhirDocumentation);
 }
 
 export function getTargetName(document: TextDocument, position: Position): string {
