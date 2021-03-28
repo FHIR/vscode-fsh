@@ -9,13 +9,42 @@ import {
   Position,
   Location,
   workspace,
+  env,
   Uri
 } from 'vscode';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
 import { getTreeForFile } from './parser';
 
 const FSH_MODE: DocumentFilter = { language: 'fsh', scheme: 'file' };
+// For most FSH entity names, show the user FSH documentation.
+// Show FHIR documentation for Profiles and Extensions.
+export const SPECIAL_URLS = new Map<string, Uri>([
+  ['alias', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-aliases')],
+  ['profile', Uri.parse('https://hl7.org/fhir/profiling.html', true)],
+  ['extension', Uri.parse('https://hl7.org/fhir/extensibility.html')],
+  [
+    'invariant',
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-invariants', true)
+  ],
+  ['instance', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-instances')],
+  ['valueset', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-value-sets')],
+  [
+    'codesystem',
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-code-systems')
+  ],
+  ['ruleset', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-rule-sets')],
+  [
+    'mapping',
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-mappings', true)
+  ],
+  [
+    'logical',
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-logical-models', true)
+  ],
+  ['resource', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-resources')]
+]);
 
 class FshDefinitionProvider implements DefinitionProvider {
   public provideDefinition(document: TextDocument, position: Position): Thenable<Location> {
@@ -31,12 +60,17 @@ class FshDefinitionProvider implements DefinitionProvider {
   }
 }
 
-export function openFhirDocumentation(): void {
+export async function openFhirDocumentation(): Promise<void> {
   const document = window.activeTextEditor.document;
   const startPosition = window.activeTextEditor.selection.start;
   if (document && startPosition) {
-    const name = getTargetName(document, startPosition);
-    window.showInformationMessage(`Opening FHIR documentation for ${name}`);
+    const name = getFhirDocumentationName(document, startPosition);
+    const uriToOpen = getDocumentationUri(name);
+    if (await isDocumentationUriValid(uriToOpen.toString())) {
+      env.openExternal(uriToOpen);
+    } else {
+      window.showInformationMessage(`No FHIR documentation for ${name}`);
+    }
   }
 }
 
@@ -126,4 +160,28 @@ function collectFshFilesForPath(filepath: string, fshFiles: string[]) {
     fshFiles.push(filepath);
   }
   return fshFiles;
+}
+
+export function getFhirDocumentationName(document: TextDocument, position: Position): string {
+  // slightly modified form of the FHIR regular expression for name
+  // FHIR wants the first character to be a capital letter, but we don't require that
+  return document.getText(document.getWordRangeAtPosition(position, /\w{1,255}/));
+}
+
+export function getDocumentationUri(name: string): Uri {
+  const lowerName = name.toLowerCase();
+  if (SPECIAL_URLS.has(lowerName)) {
+    return SPECIAL_URLS.get(lowerName);
+  } else {
+    return Uri.parse(`https://hl7.org/fhir/${lowerName}.html`, true);
+  }
+}
+
+export async function isDocumentationUriValid(uriToOpen: string): Promise<boolean> {
+  try {
+    await axios.head(uriToOpen, { timeout: 15000 });
+    return true;
+  } catch {
+    return false;
+  }
 }
