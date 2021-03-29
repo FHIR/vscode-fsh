@@ -15,6 +15,9 @@
 			"include": "#booleans"
 		},
 		{
+			"include": "#numbers"
+		},
+		{
 			"include": "#codes"
 		},
 		{
@@ -30,11 +33,25 @@
 				},
 				{
 					"name": "keyword.reserved.fsh",
-					"match": "\\b(?<=\\s)(and|codes|contains|descendent-of|exclude|exists|from|generalizes|include|in|insert|is-a|is-not-a|named|not-in|obeys|only|or|regex|system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
+					"match": "\\b(?<=\\s|^)(and|codes|contains|descendent-of|exclude|exists|from|generalizes|include|in|insert|is-a|is-not-a|named|not-in|obeys|only|or|regex|(?<=\\bfrom\\s*)system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
 				},
 				{
 					"name": "keyword.reserved.fsh",
 					"match": "(\\(\\s*)(exactly|example|extensible|preferred|required)(\\s*\\))"
+				},
+				{
+					"begin": "\\b(Reference|Canonical)\\s*\\(",
+					"beginCaptures": {
+						"0": {
+							"name": "keyword.reserved.fsh"
+						}
+					},
+					"end": "\\)",
+					"endCaptures": {
+						"0": {
+							"name": "keyword.reserved.fsh"
+						}
+					}
 				},
 				{
 					"name": "keyword.tokens.fsh",
@@ -70,12 +87,20 @@
 			"patterns": [
 				{
 					"name": "constant.numeric.fsh",
-					"match": "\\b(true|false)\\b"
+					"match": "\\b(?<=\\s|^)(true|false)(?=\\s)\\b"
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"name": "constant.numeric.fsh",
+					"match": "\\b(?<=\\s|^)(-?\\d+(\\.\\d+)?)(?=\\s)\\b"
 				}
 			]
 		},
 		"codes": {
-			"patterns": [ 
+			"patterns": [
 				{
 					"name": "constant.numeric.quoted.code.fsh",
 					"match": "#\"(?:\\\\.|[^\\\\\"])*\""
@@ -83,6 +108,11 @@
 				{
 					"name": "constant.numeric.code.fsh",
 					"match": "#[^\\s]*"
+				},
+				{
+					"name": "constant.numeric.ucum.unit.fsh",
+					"begin": "'",
+					"end": "'"
 				}
 			]
 		},
