@@ -18,12 +18,17 @@ import axios from 'axios';
 import { getTreeForFile } from './parser';
 
 const FSH_MODE: DocumentFilter = { language: 'fsh', scheme: 'file' };
-// For most FSH entity names, show the user FSH documentation.
-// Show FHIR documentation for Profiles and Extensions.
+// For FSH entity names, show the user FSH documentation.
+// Extension has an unusual key pair in order to differentiate between cases
+// where it is used as a FSH entity and where it is used as a type.
 export const SPECIAL_URLS = new Map<string, Uri>([
   ['alias', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-aliases')],
-  ['profile', Uri.parse('https://hl7.org/fhir/profiling.html', true)],
-  ['extension', Uri.parse('https://hl7.org/fhir/extensibility.html')],
+  [
+    'profile',
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-profiles', true)
+  ],
+  ['extension', Uri.parse('https://hl7.org/fhir/extensibility.html', true)],
+  ['extension:', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-extensions')],
   [
     'invariant',
     Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-invariants', true)
@@ -165,7 +170,11 @@ function collectFshFilesForPath(filepath: string, fshFiles: string[]) {
 export function getFhirDocumentationName(document: TextDocument, position: Position): string {
   // slightly modified form of the FHIR regular expression for name
   // FHIR wants the first character to be a capital letter, but we don't require that
-  return document.getText(document.getWordRangeAtPosition(position, /\w{1,255}/));
+  // The special case for Extension is to let us differentiate between cases where it is
+  // used as a FSH entity and where it is used as a FHIR type.
+  return document
+    .getText(document.getWordRangeAtPosition(position, /Extension\s*:|\w{1,255}/))
+    .replace(/\s/, ''); // If we matched the Extension special case, remove any spaces between Extension and :
 }
 
 export function getDocumentationUri(name: string): Uri {

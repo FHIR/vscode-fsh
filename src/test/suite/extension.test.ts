@@ -162,6 +162,30 @@ suite('Extension Test Suite', () => {
     });
   });
 
+  suite('#getFhirDocumentationName', function () {
+    test('should get a name with alphanumeric characters', async () => {
+      // Patient
+      // profiles1.fsh, line 6, col 12
+      const fileUri = await vscode.workspace.findFiles('profiles1.fsh');
+      assert.strictEqual(fileUri.length, 1);
+      const document = await vscode.workspace.openTextDocument(fileUri[0]);
+      const position = new vscode.Position(5, 11);
+      const name = myExtension.getFhirDocumentationName(document, position);
+      assert.strictEqual(name, 'Patient');
+    });
+
+    test('should get the name Extension: when checking the location where a FSH Extension is defined', async () => {
+      // Extension:
+      // extensions.fsh, line 2, col 6
+      const fileUri = await vscode.workspace.findFiles('extensions.fsh');
+      assert.strictEqual(fileUri.length, 1);
+      const document = await vscode.workspace.openTextDocument(fileUri[0]);
+      const position = new vscode.Position(1, 5);
+      const name = myExtension.getFhirDocumentationName(document, position);
+      assert.strictEqual(name, 'Extension:');
+    });
+  });
+
   suite('#isDocumentationUriValid', function () {
     this.timeout(0);
     setup(() => {
