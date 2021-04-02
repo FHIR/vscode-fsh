@@ -46,7 +46,22 @@
                 "language": "fsh",
                 "path": "./snippets/fsh-snippets.json"
             }
-        ]
+        ],
+        "commands": [
+            {
+                "command": "extension.openFhir",
+                "title": "Open FHIR Documentation"
+            }
+        ],
+        "menus": {
+            "editor/context": [
+                {
+                    "command": "extension.openFhir",
+                    "group": "navigation",
+                    "when": "editorLangId == fsh"
+                }
+            ]
+        }
     },
     "scripts": {
         "build": "tsc -p ./",
@@ -72,12 +87,14 @@
         "eslint-config-prettier": "^8.1.0",
         "glob": "^7.1.6",
         "mocha": "^8.3.1",
+        "nock": "^13.0.11",
         "prettier": "^2.2.1",
         "typescript": "^4.2.2",
         "vscode": "^1.1.37",
         "vscode-test": "^1.5.1"
     },
     "dependencies": {
-        "antlr4": "~4.8.0"
+        "antlr4": "~4.8.0",
+        "axios": "^0.21.1"
     }
 }
