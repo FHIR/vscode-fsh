@@ -18,28 +18,40 @@ import axios from 'axios';
 import { getTreeForFile } from './parser';
 
 const FSH_MODE: DocumentFilter = { language: 'fsh', scheme: 'file' };
-// For FSH entity names, show the user FSH documentation.
+// For FSH entity names and keywords, show the user FSH documentation.
 // Extension has an unusual key pair in order to differentiate between cases
 // where it is used as a FSH entity and where it is used as a type.
 export const SPECIAL_URLS = new Map<string, Uri>([
-  ['alias', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-aliases')],
+  ['alias', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-aliases', true)],
   [
     'profile',
     Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-profiles', true)
   ],
   ['extension', Uri.parse('https://hl7.org/fhir/extensibility.html', true)],
-  ['extension:', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-extensions')],
+  [
+    'extension:',
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-extensions', true)
+  ],
   [
     'invariant',
     Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-invariants', true)
   ],
-  ['instance', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-instances')],
-  ['valueset', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-value-sets')],
+  [
+    'instance',
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-instances', true)
+  ],
+  [
+    'valueset',
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-value-sets', true)
+  ],
   [
     'codesystem',
-    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-code-systems')
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-code-systems', true)
   ],
-  ['ruleset', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-rule-sets')],
+  [
+    'ruleset',
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-rule-sets', true)
+  ],
   [
     'mapping',
     Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-mappings', true)
@@ -48,7 +60,20 @@ export const SPECIAL_URLS = new Map<string, Uri>([
     'logical',
     Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-logical-models', true)
   ],
-  ['resource', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-resources')]
+  [
+    'resource',
+    Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-resources', true)
+  ],
+  ['from', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#binding-rules', true)],
+  ['obeys', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#obeys-rules', true)],
+  ['only', Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#type-rules', true)],
+  [
+    'contains',
+    Uri.parse(
+      'https://hl7.org/fhir/uv/shorthand/reference.html#contains-rules-for-extensions',
+      true
+    )
+  ]
 ]);
 
 class FshDefinitionProvider implements DefinitionProvider {
