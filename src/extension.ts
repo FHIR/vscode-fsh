@@ -77,11 +77,14 @@ export const SPECIAL_URLS = new Map<string, Uri>([
 ]);
 
 class FshDefinitionProvider implements DefinitionProvider {
-  public provideDefinition(document: TextDocument, position: Position): Thenable<Location> {
+  public provideDefinition(
+    document: TextDocument,
+    position: Position
+  ): Thenable<Location | Location[]> {
     return new Promise((resolve, reject) => {
       try {
         const name = getTargetName(document, position);
-        const location: Location = getDefinitionLocation(name);
+        const location = getDefinitionLocation(name);
         resolve(location);
       } catch (e) {
         reject(e);
@@ -118,10 +121,11 @@ export function getTargetName(document: TextDocument, position: Position): strin
   return document.getText(document.getWordRangeAtPosition(position, /[^\s\(\)#]+/));
 }
 
-export function getDefinitionLocation(target: string): Location {
+export function getDefinitionLocation(target: string): Location[] {
   if (!(workspace && workspace.workspaceFolders)) {
     return;
   }
+  const result: Location[] = [];
   // get all our fsh files
   const fshFiles: string[] = [];
   workspace.workspaceFolders.forEach(folder => {
@@ -142,13 +146,14 @@ export function getDefinitionLocation(target: string): Location {
         // some entities work a little differently
         if (entity.alias()) {
           if (target === entity.alias().SEQUENCE()[0].getText()) {
-            return new Location(Uri.file(filepath), new Position(entity.alias().start.line - 1, 0));
+            result.push(
+              new Location(Uri.file(filepath), new Position(entity.alias().start.line - 1, 0))
+            );
           }
         } else if (entity.ruleSet()) {
           if (target === entity.ruleSet().RULESET_REFERENCE().getText().trim()) {
-            return new Location(
-              Uri.file(filepath),
-              new Position(entity.ruleSet().start.line - 1, 0)
+            result.push(
+              new Location(Uri.file(filepath), new Position(entity.ruleSet().start.line - 1, 0))
             );
           }
         } else if (entity.paramRuleSet()) {
@@ -156,9 +161,11 @@ export function getDefinitionLocation(target: string): Location {
           const paramListStart = rulesetReference.indexOf('(');
           const name = rulesetReference.slice(0, paramListStart).trim();
           if (target === name) {
-            return new Location(
-              Uri.file(filepath),
-              new Position(entity.paramRuleSet().start.line - 1, 0)
+            result.push(
+              new Location(
+                Uri.file(filepath),
+                new Position(entity.paramRuleSet().start.line - 1, 0)
+              )
             );
           }
         } else {
@@ -171,13 +178,15 @@ export function getDefinitionLocation(target: string): Location {
             entity.invariant() ??
             entity.mapping();
           if (target === typedEntity.name().getText()) {
-            return new Location(Uri.file(filepath), new Position(typedEntity.start.line - 1, 0));
+            result.push(
+              new Location(Uri.file(filepath), new Position(typedEntity.start.line - 1, 0))
+            );
           }
         }
       }
     }
   }
-  return;
+  return result;
 }
 
 function collectFshFilesForPath(filepath: string, fshFiles: string[]) {

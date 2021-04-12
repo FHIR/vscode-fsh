@@ -1,4 +1,4 @@
-import * as assert from 'assert';
+import { assert } from 'chai';
 import path from 'path';
 import nock from 'nock';
 
@@ -16,7 +16,10 @@ suite('Extension Test Suite', () => {
   suite('#getDefinitionLocation', () => {
     test('should find a Profile definition', () => {
       try {
-        const location = myExtension.getDefinitionLocation('MyPatient');
+        const locations = myExtension.getDefinitionLocation('MyPatient');
+        assert.ok(locations);
+        assert.equal(locations.length, 1);
+        const location = locations[0];
         assert.ok(location);
         const expectedUriPath = path.join(
           vscode.workspace.workspaceFolders[0].uri.fsPath,
@@ -31,7 +34,10 @@ suite('Extension Test Suite', () => {
 
     test('should find an Extension definition', () => {
       try {
-        const location = myExtension.getDefinitionLocation('IceCreamExtension');
+        const locations = myExtension.getDefinitionLocation('IceCreamExtension');
+        assert.ok(locations);
+        assert.equal(locations.length, 1);
+        const location = locations[0];
         assert.ok(location);
         const expectedUriPath = path.join(
           vscode.workspace.workspaceFolders[0].uri.fsPath,
@@ -46,7 +52,10 @@ suite('Extension Test Suite', () => {
 
     test('should find a ValueSet definition', () => {
       try {
-        const location = myExtension.getDefinitionLocation('MyValueSet');
+        const locations = myExtension.getDefinitionLocation('MyValueSet');
+        assert.ok(locations);
+        assert.equal(locations.length, 1);
+        const location = locations[0];
         assert.ok(location);
         const expectedUriPath = path.join(
           vscode.workspace.workspaceFolders[0].uri.fsPath,
@@ -61,7 +70,10 @@ suite('Extension Test Suite', () => {
 
     test('should find a CodeSystem definition', () => {
       try {
-        const location = myExtension.getDefinitionLocation('AnotherCodeSystem');
+        const locations = myExtension.getDefinitionLocation('AnotherCodeSystem');
+        assert.ok(locations);
+        assert.equal(locations.length, 1);
+        const location = locations[0];
         assert.ok(location);
         const expectedUriPath = path.join(
           vscode.workspace.workspaceFolders[0].uri.fsPath,
@@ -76,7 +88,10 @@ suite('Extension Test Suite', () => {
 
     test('should find an Invariant definition', () => {
       try {
-        const location = myExtension.getDefinitionLocation('inv-2');
+        const locations = myExtension.getDefinitionLocation('inv-2');
+        assert.ok(locations);
+        assert.equal(locations.length, 1);
+        const location = locations[0];
         assert.ok(location);
         const expectedUriPath = path.join(
           vscode.workspace.workspaceFolders[0].uri.fsPath,
@@ -91,8 +106,10 @@ suite('Extension Test Suite', () => {
 
     test('should find an Alias definition', () => {
       try {
-        const location = myExtension.getDefinitionLocation('ZOO');
-        assert.ok(location);
+        const locations = myExtension.getDefinitionLocation('ZOO');
+        assert.ok(locations);
+        assert.equal(locations.length, 1);
+        const location = locations[0];
         const expectedUriPath = path.join(
           vscode.workspace.workspaceFolders[0].uri.fsPath,
           'aliases.fsh'
@@ -102,6 +119,26 @@ suite('Extension Test Suite', () => {
       } catch (err) {
         assert.fail(err);
       }
+    });
+
+    test('should find multiple locations when a name is used more than once', () => {
+      const locations = myExtension.getDefinitionLocation('ReusedName');
+      assert.ok(locations);
+      assert.equal(locations.length, 2);
+      const expectedProfile = new vscode.Location(
+        vscode.Uri.file(
+          path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'profiles1.fsh')
+        ),
+        new vscode.Position(8, 0)
+      );
+      const expectedValueSet = new vscode.Location(
+        vscode.Uri.file(
+          path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'valuesets.fsh')
+        ),
+        new vscode.Position(9, 0)
+      );
+      assert.deepInclude(locations, expectedProfile);
+      assert.deepInclude(locations, expectedValueSet);
     });
   });
 
