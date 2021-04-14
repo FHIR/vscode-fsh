@@ -7,7 +7,11 @@ import { FSHParser } from './lang/FSHParser';
 // https://github.com/standardhealth/vscode-language-cimpl
 
 export function getTreeForFile(filepath: string): any {
-  const chars = new InputStream(fs.readFileSync(filepath).toString());
+  return getTreeForText(fs.readFileSync(filepath).toString());
+}
+
+export function getTreeForText(text: string): any {
+  const chars = new InputStream(text);
   const lexer = new FSHLexer(chars);
   // @ts-ignore
   lexer.removeErrorListeners();
