@@ -4,6 +4,7 @@ import { before, after, beforeEach, afterEach } from 'mocha';
 import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs-extra';
+import * as parser from '../../parser';
 import { FshDefinitionProvider } from '../../FshDefinitionProvider';
 
 chai.use(spies);
@@ -35,52 +36,6 @@ suite('FshDefinitionProvider', () => {
       assert.exists(fileNames);
       assert.isNotEmpty(fileNames);
       assert.exists(fsWatcher);
-    });
-
-    // The fsHandler tests use expect in order to play nicely with chai-spy
-    test.skip('should call the update handler when a fsh file is created', () => {
-      const updateSpy = chai.spy.on(instance, 'updateNamesFromFile');
-      const filePath = path.join(
-        vscode.workspace.workspaceFolders[0].uri.fsPath,
-        'constructor-test',
-        'create-test.fsh'
-      );
-      instance.fsWatcher.onDidCreate.call(instance, vscode.Uri.file(filePath));
-      // fs.ensureFileSync(filePath);
-      expect(updateSpy).to.have.been.called.once;
-      expect(updateSpy).to.have.been.called.with(vscode.Uri.file(filePath));
-    });
-
-    test.skip('should call the update handler when a fsh file is updated', () => {
-      const filePath = path.join(
-        vscode.workspace.workspaceFolders[0].uri.fsPath,
-        'constructor-test',
-        'change-test.fsh'
-      );
-      fs.ensureFileSync(filePath);
-      // start spying after we know the file exists
-      const updateSpy = chai.spy.on(instance, 'updateNamesFromFile');
-      fs.writeFileSync(filePath, '// This is just a comment');
-      expect(updateSpy).to.have.been.called.once;
-      expect(updateSpy).to.have.been.called.with(vscode.Uri.file(filePath));
-    });
-
-    test.skip('should call the delete handler when a fsh file is deleted', () => {
-      const filePath = path.join(
-        vscode.workspace.workspaceFolders[0].uri.fsPath,
-        'constructor-test',
-        'delete-test.fsh'
-      );
-      fs.ensureFileSync(filePath);
-      // start spying after we know the file exists
-      const deleteSpy = chai.spy.on(instance, 'handleDeletedFile');
-      fs.removeSync(filePath);
-      expect(deleteSpy).to.have.been.called.once;
-      expect(deleteSpy).to.have.been.called.with(vscode.Uri.file(filePath));
-    });
-
-    test.skip('should not call any handlers on changes to non-fsh files', () => {
-      // Test not yet implemented, because filesystem watchers are hard
     });
   });
 
@@ -210,12 +165,14 @@ suite('FshDefinitionProvider', () => {
 
     afterEach(() => {
       instance.scanAll();
+      chai.spy.restore();
     });
 
     test('should add information from a new file path', () => {
-      // clear out both maps
+      // clear out all maps to force updates
       instance.fileNames.clear();
       instance.nameLocations.clear();
+      instance.latestHashes.clear();
       // update from one file
       const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
       instance.updateNamesFromFile(filePath);
@@ -231,31 +188,31 @@ suite('FshDefinitionProvider', () => {
       ]);
     });
 
-    test('should add information from a new Uri', () => {
-      test('should add information from a new file path', () => {
-        // clear out both maps
-        instance.fileNames.clear();
-        instance.nameLocations.clear();
-        // update from one file
-        const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
-        instance.updateNamesFromFile(vscode.Uri.file(filePath));
-        assert.equal(instance.fileNames.size, 1);
-        assert.hasAllKeys(instance.fileNames, [filePath]);
-        assert.sameMembers(instance.fileNames.get(filePath), ['SimpleRuleSet', 'ParamRuleSet']);
-        assert.hasAllKeys(instance.nameLocations, ['SimpleRuleSet', 'ParamRuleSet']);
-        assert.sameDeepMembers(instance.nameLocations.get('SimpleRuleSet'), [
-          new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0))
-        ]);
-        assert.sameDeepMembers(instance.nameLocations.get('ParamRuleSet'), [
-          new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0))
-        ]);
-      });
+    test('should add information from a new file path', () => {
+      // clear out all maps to force updates
+      instance.fileNames.clear();
+      instance.nameLocations.clear();
+      instance.latestHashes.clear();
+      // update from one file
+      const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
+      instance.updateNamesFromFile(vscode.Uri.file(filePath));
+      assert.equal(instance.fileNames.size, 1);
+      assert.hasAllKeys(instance.fileNames, [filePath]);
+      assert.sameMembers(instance.fileNames.get(filePath), ['SimpleRuleSet', 'ParamRuleSet']);
+      assert.hasAllKeys(instance.nameLocations, ['SimpleRuleSet', 'ParamRuleSet']);
+      assert.sameDeepMembers(instance.nameLocations.get('SimpleRuleSet'), [
+        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0))
+      ]);
+      assert.sameDeepMembers(instance.nameLocations.get('ParamRuleSet'), [
+        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0))
+      ]);
     });
 
     test('should add information from a TextDocument', async () => {
-      // clear out both maps
+      // clear out all maps to force updates
       instance.fileNames.clear();
       instance.nameLocations.clear();
+      instance.latestHashes.clear();
       // update from one TextDocument
       const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
       const doc = await vscode.workspace.openTextDocument(filePath);
@@ -273,6 +230,8 @@ suite('FshDefinitionProvider', () => {
     });
 
     test('should update information from an existing file path', () => {
+      // clear hashes to force file reparse
+      instance.latestHashes.clear();
       const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
       // modify both maps
       instance.fileNames.set(filePath, ['ThisGotDeleted', 'SimpleRuleSet', 'ParamRuleSet']);
@@ -290,6 +249,35 @@ suite('FshDefinitionProvider', () => {
       ]);
       assert.sameDeepMembers(instance.nameLocations.get('ParamRuleSet'), [
         new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0))
+      ]);
+    });
+
+    test('should not parse and update information from a file if its hash has not changed', () => {
+      const parserSpy = chai.spy.on(parser, 'getTreeForText');
+      // this time, specifically do not clear out latestHashes!
+      const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
+      // modify both maps
+      instance.fileNames.set(filePath, ['ThisGotDeleted', 'SimpleRuleSet', 'ParamRuleSet']);
+      instance.nameLocations.set('SimpleRuleSet', [
+        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0))
+      ]);
+      instance.nameLocations.set('ParamRuleSet', [
+        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0))
+      ]);
+      // try to update from one file,
+      instance.updateNamesFromFile(filePath);
+      // but the parser should not have been called, and the maps should not be different.
+      expect(parserSpy).to.have.been.called.exactly(0);
+      assert.sameMembers(instance.fileNames.get(filePath), [
+        'ThisGotDeleted',
+        'SimpleRuleSet',
+        'ParamRuleSet'
+      ]);
+      assert.sameDeepMembers(instance.nameLocations.get('SimpleRuleSet'), [
+        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0))
+      ]);
+      assert.sameDeepMembers(instance.nameLocations.get('ParamRuleSet'), [
+        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0))
       ]);
     });
   });
@@ -310,6 +298,7 @@ suite('FshDefinitionProvider', () => {
       assert.lengthOf(instance.nameLocations.get('ReusedName'), 2);
       instance.handleDeletedFile(filePath);
       assert.notExists(instance.fileNames.get(filePath));
+      assert.notExists(instance.latestHashes.get(filePath));
       // MyValueSet is only in this file, so it should be removed
       assert.notExists(instance.nameLocations.get('MyValueSet'));
       // ReusedName is in one other file, so that entry should still exist
@@ -324,6 +313,7 @@ suite('FshDefinitionProvider', () => {
       assert.lengthOf(instance.nameLocations.get('ReusedName'), 2);
       instance.handleDeletedFile(vscode.Uri.file(filePath));
       assert.notExists(instance.fileNames.get(filePath));
+      assert.notExists(instance.latestHashes.get(filePath));
       // MyValueSet is only in this file, so it should be removed
       assert.notExists(instance.nameLocations.get('MyValueSet'));
       // ReusedName is in one other file, so that entry should still exist
@@ -334,11 +324,17 @@ suite('FshDefinitionProvider', () => {
 
   suite('#handleDirtyFiles', function () {
     afterEach(async () => {
-      // close the editor for codesystems.fsh
+      // restore spies
+      chai.spy.restore();
+      // close the editors to get rid of unsaved changes
       await vscode.window.showTextDocument(
         vscode.Uri.file(
           path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'codesystems.fsh')
         )
+      );
+      await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+      await vscode.window.showTextDocument(
+        vscode.Uri.file(path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'aliases.fsh'))
       );
       await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
     });
@@ -358,6 +354,21 @@ suite('FshDefinitionProvider', () => {
       instance.handleDirtyFiles();
       assert.notExists(instance.nameLocations.get('MyCodeSystem'));
       assert.exists(instance.nameLocations.get('AnimalCodeSystem'));
+    });
+
+    test('should not parse a modified file if its hash has not changed', async () => {
+      const updateSpy = chai.spy.on(instance, 'updateNamesFromFile');
+      const parserSpy = chai.spy.on(parser, 'getTreeForText');
+      const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'aliases.fsh');
+      const fileChange = new vscode.WorkspaceEdit();
+      // This replacement operation won't change the actual contents, but will mark the file as having changed
+      fileChange.replace(vscode.Uri.file(filePath), new vscode.Range(0, 0, 0, 5), 'Alias');
+      await vscode.workspace.applyEdit(fileChange);
+      instance.handleDirtyFiles();
+      // We should call the update function, but
+      expect(updateSpy).to.have.been.called.exactly(1);
+      // it should detect that the hash is the same, and not parse the text.
+      expect(parserSpy).to.have.been.called.exactly(0);
     });
   });
 });
