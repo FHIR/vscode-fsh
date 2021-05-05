@@ -5,3 +5,6 @@ Parent: Observation
 Profile: MyPatient
 Parent: Patient
 * insert SimpleRuleSet
+
+Profile: ReusedName
+Parent: Observation

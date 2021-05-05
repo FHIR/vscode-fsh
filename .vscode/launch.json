@@ -6,7 +6,20 @@
 	"version": "0.2.0",
     "configurations": [
         {
-            "name": "Extension",
+            "name": "Debug Tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/out/test/suite/index",
+                "${workspaceFolder}/src/test/fixtures",
+                "--disable-extensions"
+            ],
+            "outFiles": ["${workspaceFolder}/out/test/**/*.js"]
+        },
+        {
+            "name": "Launch Extension",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
