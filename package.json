@@ -6,6 +6,7 @@
     "author": "The MITRE Corporation",
     "license": "Apache-2.0",
     "publisher": "kmahalingam",
+    "icon": "images/docs/fsh-icon.png",
     "repository": {
         "type": "git",
         "url": "https://github.com/standardhealth/vscode-language-fsh"
