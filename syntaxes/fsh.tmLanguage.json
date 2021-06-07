@@ -1,151 +1,151 @@
 {
-	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-	"name": "FSH",
-	"patterns": [
-		{
-			"include": "#keywords"
-		},
-		{
-			"include": "#strings"
-		},
-		{
-			"include": "#urls"
-		},
-		{
-			"include": "#booleans"
-		},
-		{
-			"include": "#numbers"
-		},
-		{
-			"include": "#codes"
-		},
-		{
-			"include": "#comments"
-		}
-	],
-	"repository": {
-		"keywords": {
-			"patterns": [
-				{
-					"name": "keyword.control.fsh",
-					"match": "\\b(Alias|CodeSystem|Expression|Extension|Description|Id|Instance|InstanceOf|Invariant|Logical|Mapping|Mixins|Parent|Profile|Resource|RuleSet|Severity|Source|Target|Title|Usage|ValueSet|XPath)(?=\\s*:)\\b"
-				},
-				{
-					"name": "keyword.reserved.fsh",
-					"match": "\\b(?<=\\s|^)(and|codes|contains|descendent-of|exclude|exists|from|generalizes|include|in|insert|is-a|is-not-a|named|not-in|obeys|only|or|regex|(?<=\\bfrom\\s*)system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
-				},
-				{
-					"name": "keyword.reserved.fsh",
-					"match": "(\\(\\s*)(exactly|example|extensible|preferred|required)(\\s*\\))"
-				},
-				{
-					"begin": "\\b(Reference|Canonical)\\s*\\(",
-					"beginCaptures": {
-						"0": {
-							"name": "keyword.reserved.fsh"
-						}
-					},
-					"end": "\\)",
-					"endCaptures": {
-						"0": {
-							"name": "keyword.reserved.fsh"
-						}
-					}
-				},
-				{
-					"name": "keyword.tokens.fsh",
-					"match": "\\*|->|=|:"
-				}
-			]
-		},
-		"strings": {
-			"name": "string.quoted.double.fsh",
-			"begin": "\"",
-			"end": "\"",
-			"patterns": [
-				{
-					"name": "constant.character.escape.fsh",
-					"match": "\\\\."
-				}
-			]
-		},
-		"urls": {
-			"name": "url.fsh",
-			"patterns": [
-				{
-					"match": "\\b(https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&\\/\\/=]*))\\b",
-					"captures": {
-						"0": {
-							"name": "string.unquoted.url.fsh"
-						}
-					}
-				}
-			]
-		},
-		"booleans": {
-			"patterns": [
-				{
-					"name": "constant.numeric.fsh",
-					"match": "\\b(?<=\\s|^)(true|false)(?=\\s)\\b"
-				}
-			]
-		},
-		"numbers": {
-			"patterns": [
-				{
-					"name": "constant.numeric.fsh",
-					"match": "\\b(?<=\\s|^)(-?\\d+(\\.\\d+)?)(?=\\s)\\b"
-				}
-			]
-		},
-		"codes": {
-			"patterns": [
-				{
-					"name": "constant.numeric.quoted.code.fsh",
-					"match": "#\"(?:\\\\.|[^\\\\\"])*\""
-				},
-				{
-					"name": "constant.numeric.code.fsh",
-					"match": "#[^\\s]*"
-				},
-				{
-					"name": "constant.numeric.ucum.unit.fsh",
-					"begin": "'",
-					"end": "'"
-				}
-			]
-		},
-		"comments": {
-			"name": "comment.fsh",
-			"patterns": [
-				{
-					"begin": "(\\s|^)//",
-					"beginCaptures": {
-						"0": {
-							"name": "punctuation.definition.comment.fsh"
-						}
-					},
-					"end": "$",
-					"name": "comment.line.double-slash.fsh"
-				},
-				{
-					"name": "comment.block.fsh",
-					"begin": "/\\*",
-					"beginCaptures": {
-						"0": {
-							"name": "punctuation.definition.comment.fsh"
-						}
-					},
-					"end": "\\*/",
-					"endCaptures": {
-						"0": {
-							"name": "punctuation.definition.comment.fsh"
-						}
-					}
-				}
-			]
-		}
-	},
-	"scopeName": "source.fsh"
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "FSH",
+  "patterns": [
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#urls"
+    },
+    {
+      "include": "#booleans"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#codes"
+    },
+    {
+      "include": "#comments"
+    }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.fsh",
+          "match": "\\b(Alias|CodeSystem|Expression|Extension|Description|Id|Instance|InstanceOf|Invariant|Logical|Mapping|Mixins|Parent|Profile|Resource|RuleSet|Severity|Source|Target|Title|Usage|ValueSet|XPath)(?=\\s*:)\\b"
+        },
+        {
+          "name": "keyword.reserved.fsh",
+          "match": "\\b(?<=\\s|^)(and|codes|contains|descendent-of|exclude|exists|from|generalizes|include|in|insert|is-a|is-not-a|named|not-in|obeys|only|or|regex|(?<=\\bfrom\\s*)system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
+        },
+        {
+          "name": "keyword.reserved.fsh",
+          "match": "(\\(\\s*)(exactly|example|extensible|preferred|required)(\\s*\\))"
+        },
+        {
+          "begin": "\\b(Reference|Canonical)\\s*\\(",
+          "beginCaptures": {
+            "0": {
+              "name": "keyword.reserved.fsh"
+            }
+          },
+          "end": "\\)",
+          "endCaptures": {
+            "0": {
+              "name": "keyword.reserved.fsh"
+            }
+          }
+        },
+        {
+          "name": "keyword.tokens.fsh",
+          "match": "\\*|->|=|\\+|:"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.fsh",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.fsh",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "urls": {
+      "name": "url.fsh",
+      "patterns": [
+        {
+          "match": "\\b(https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&\\/\\/=]*))\\b",
+          "captures": {
+            "0": {
+              "name": "string.unquoted.url.fsh"
+            }
+          }
+        }
+      ]
+    },
+    "booleans": {
+      "patterns": [
+        {
+          "name": "constant.numeric.fsh",
+          "match": "\\b(?<=\\s|^)(true|false)(?=\\s)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.fsh",
+          "match": "\\b(?<=\\s|^)(-?\\d+(\\.\\d+)?)(?=\\s)\\b"
+        }
+      ]
+    },
+    "codes": {
+      "patterns": [
+        {
+          "name": "constant.numeric.quoted.code.fsh",
+          "match": "#\"(?:\\\\.|[^\\\\\"])*\""
+        },
+        {
+          "name": "constant.numeric.code.fsh",
+          "match": "#[^\\s]*"
+        },
+        {
+          "name": "constant.numeric.ucum.unit.fsh",
+          "begin": "'",
+          "end": "'"
+        }
+      ]
+    },
+    "comments": {
+      "name": "comment.fsh",
+      "patterns": [
+        {
+          "begin": "(\\s|^)//",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.fsh"
+            }
+          },
+          "end": "$",
+          "name": "comment.line.double-slash.fsh"
+        },
+        {
+          "name": "comment.block.fsh",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.fsh"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.fsh"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "scopeName": "source.fsh"
 }
