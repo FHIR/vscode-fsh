@@ -208,11 +208,13 @@ function getNameAndLine(entity: any): { name: string; startLine: number } {
     const typedEntity =
       entity.profile() ??
       entity.extension() ??
+      entity.logical() ??
+      entity.resource() ?? 
       entity.instance() ??
       entity.valueSet() ??
       entity.codeSystem() ??
       entity.invariant() ??
-      entity.mapping();
+      entity.mapping(); 
     name = typedEntity.name().getText();
     startLine = typedEntity.start.line - 1;
   }
