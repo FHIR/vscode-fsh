@@ -41,7 +41,7 @@ suite('FshDefinitionProvider', () => {
 
   suite('#scanAll', () => {
     test('should have an entry in fileNames for each file path', () => {
-      assert.equal(instance.fileNames.size, 8);
+      assert.equal(instance.fileNames.size, 10);
 
       assert.containsAllKeys(instance.fileNames, [
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'profiles', 'profiles1.fsh'),
@@ -51,7 +51,9 @@ suite('FshDefinitionProvider', () => {
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'extensions.fsh'),
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'invariants.fsh'),
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh'),
-        path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'valuesets.fsh')
+        path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'valuesets.fsh'),
+        path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'resources.fsh'),
+        path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'logicalModels.fsh')
       ]);
     });
 
@@ -104,10 +106,22 @@ suite('FshDefinitionProvider', () => {
         ),
         ['MyValueSet', 'ReusedName']
       );
+      assert.sameMembers(
+        instance.fileNames.get(
+          path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'logicalModels.fsh')
+        ),
+        ['Employee-PT', 'Employee']
+      );
+      assert.sameMembers(
+        instance.fileNames.get(
+          path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'resources.fsh')
+        ),
+        ['Laptop']
+      );
     });
 
     test('should have an entry in nameLocations for each name', () => {
-      assert.equal(instance.nameLocations.size, 15);
+      assert.equal(instance.nameLocations.size, 18);
       assert.containsAllKeys(instance.nameLocations, [
         'MyObservation',
         'MyPatient',
@@ -123,7 +137,10 @@ suite('FshDefinitionProvider', () => {
         'ext-1',
         'SimpleRuleSet',
         'ParamRuleSet',
-        'MyValueSet'
+        'MyValueSet',
+        'Employee',
+        'Employee-PT',
+        'Laptop'
       ]);
     });
 
