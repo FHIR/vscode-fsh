@@ -31,9 +31,14 @@ the &lt;TAB&gt; key to move to the next placeholder. All FSH snippets always sto
 | ------- | ---------- | --------------------------------------------------------------- |
 | `pro`   | Profile    | Profile, Parent, Id (auto), Title (auto), Description           |
 | `ext`   | Extension  | Extension, Id (auto), Title (auto), Description                 |
+| `log`   | Logical    | Logical, Parent, Id (auto), Title (auto), Description           |
+| `res`   | Resource   | Resource, Parent (choice), Id (auto), Title (auto), Description |
 | `vs`    | ValueSet   | ValueSet, Id (auto), Title (auto), Description                  |
 | `cs`    | CodeSystem | CodeSystem, Id (auto), Title (auto), Description                |
 | `inst`  | Instance   | Instance, InstanceOf, Usage (choice), Title (auto), Description |
+| `inv`   | Invariant  | Invariant, Description, Expression, Severity (choice), XPath    |
+| `map`   | Mapping    | Mapping, Source, Target, Id, Title (auto), Description          |
+| `rs `   | RuleSet    | RuleSet                                                         |
 
 ## Go to Definition
 

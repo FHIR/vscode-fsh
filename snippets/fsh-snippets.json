@@ -4,8 +4,8 @@
 		"body": [
 			"Profile: $1",
 			"Parent: $2",
-			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
-			"Title: \"${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}\"",
+			"Id: ${3:${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}}",
+			"Title: \"${4:${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}}\"",
 			"Description: \"$5\"",
 			"* $0"
 		],
@@ -16,21 +16,47 @@
 		"prefix": ["ext", "Ext"],
 		"body": [
 			"Extension: $1",
-			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
-			"Title: \"${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}\"",
-			"Description: \"$2\"",
+			"Id: ${2:${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}}",
+			"Title: \"${3:${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}}\"",
+			"Description: \"$4\"",
 			"* $0"
 		],
 		"description": "Create a FSH Extension"
+	},
+
+	"FSH Logical": {
+		"prefix": ["log", "Log"],
+		"body": [
+			"Logical: $1",
+			"Parent: ${2:Base}",
+			"Id: ${3:$1}",
+			"Title: \"${4:${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}}\"",
+			"Description: \"$5\"",
+			"* $0"
+		],
+		"description": "Create a FSH Resource"
+	},
+
+	"FSH Resource": {
+		"prefix": ["res", "Res"],
+		"body": [
+			"Resource: $1",
+			"Parent: ${2|DomainResource,Resource|}",
+			"Id: ${3:$1}",
+			"Title: \"${4:${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}}\"",
+			"Description: \"$5\"",
+			"* $0"
+		],
+		"description": "Create a FSH Resource"
 	},
 
 	"FSH Value Set": {
 		"prefix": ["vs", "VS", "val", "Val"],
 		"body": [
 			"ValueSet: $1",
-			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
-			"Title: \"${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}\"",
-			"Description: \"$2\"",
+			"Id: ${2:${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}}",
+			"Title: \"${3:${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}}\"",
+			"Description: \"$4\"",
 			"* $0"
 		],
 		"description": "Create a FSH ValueSet"
@@ -40,24 +66,61 @@
 		"prefix": ["cs", "CS", "cod", "Cod"],
 		"body": [
 			"CodeSystem: $1",
-			"Id: ${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}",
-			"Title: \"${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}\"",
-			"Description: \"$2\"",
+			"Id: ${2:${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}}",
+			"Title: \"${3:${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}}\"",
+			"Description: \"$4\"",
 			"* $0"
 		],
 		"description": "Create a FSH Code System"
 	},
 
 	"FSH Instance": {
-		"prefix": "inst",
+		"prefix": ["inst", "Inst"],
 		"body": [
 			"Instance: $1",
 			"InstanceOf: $2",
 			"Usage: ${3|#example,#definition,#inline|}",
-			"Title: \"${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}\"",
+			"Title: \"${4:${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}}\"",
 			"Description: \"$5\"",
 			"* $0"
 		],
 		"description": "Create a FSH Instance"
+	},
+
+	"FSH Invariant": {
+		"prefix": ["inv", "Inv"],
+		"body": [
+			"Invariant: $1",
+			"Description: \"$2\"",
+			"Expression: \"$3\"",
+			"Severity: ${4|#error,#warning|}",
+			"XPath: \"$5\"",
+			"",
+			"$0"
+		],
+		"description": "Create a FSH Invariant"
+	},
+
+	"FSH Mapping": {
+		"prefix": ["map", "Map"],
+		"body": [
+			"Mapping: $1",
+			"Source: $2",
+			"Target: \"$3\"",
+			"Id: \"$4\"",
+			"Title: \"${5:${4/(([A-Za-z]*)[^A-Za-z0-9]([A-Za-z]*))|(([A-Za-z]*[a-z0-9]+)([A-Za-z]+))|(([A-Za-z]+)([A-Za-z0-9])([a-z]))/${2:/capitalize}$5$8 ${3:/capitalize}$6$9$10/g}}\"",
+			"Description: \"$6\"",
+			"* $0"
+		],
+		"description": "Create a FSH Invariant"
+	},
+
+	"FSH RuleSet": {
+		"prefix": ["RS", "rs", "rule", "Rule"],
+		"body": [
+			"RuleSet: $1",
+			"* $0"
+		],
+		"description": "Create a FSH RuleSet"
 	}
 }
