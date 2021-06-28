@@ -108,7 +108,7 @@
 			"Source: $2",
 			"Target: \"$3\"",
 			"Id: \"$4\"",
-			"Title: \"${5:${4/(([A-Za-z]*)[^A-Za-z0-9]([A-Za-z]*))|(([A-Za-z]*[a-z0-9]+)([A-Za-z]+))|(([A-Za-z]+)([A-Za-z0-9])([a-z]))/${2:/capitalize}$5$8 ${3:/capitalize}$6$9$10/g}}\"",
+			"Title: \"$5\"",
 			"Description: \"$6\"",
 			"* $0"
 		],
