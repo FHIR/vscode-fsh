@@ -14,21 +14,20 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 
-export enum EntityType {
-  Alias,
-  RuleSet,
-  Profile,
-  Extension,
-  Logical,
-  Resource,
-  Instance,
-  ValueSet,
-  CodeSystem,
-  Invariant,
-  Mapping
-}
+export type EntityType =
+  | 'Alias'
+  | 'RuleSet'
+  | 'Profile'
+  | 'Extension'
+  | 'Logical'
+  | 'Resource'
+  | 'Instance'
+  | 'ValueSet'
+  | 'CodeSystem'
+  | 'Invariant'
+  | 'Mapping';
 
-type NameInfo = {
+export type NameInfo = {
   location: Location;
   type: EntityType;
 };
@@ -218,46 +217,46 @@ function getNameAndLine(entity: any): { name: string; startLine: number; entityT
   if (entity.alias()) {
     name = entity.alias().SEQUENCE()[0].getText();
     startLine = entity.alias().start.line - 1;
-    entityType = EntityType.Alias;
+    entityType = 'Alias';
   } else if (entity.ruleSet()) {
     name = entity.ruleSet().RULESET_REFERENCE().getText().trim();
     startLine = entity.ruleSet().start.line - 1;
-    entityType = EntityType.RuleSet;
+    entityType = 'RuleSet';
   } else if (entity.paramRuleSet()) {
     const rulesetReference = entity.paramRuleSet().PARAM_RULESET_REFERENCE().getText();
     const paramListStart = rulesetReference.indexOf('(');
     name = rulesetReference.slice(0, paramListStart).trim();
     startLine = entity.paramRuleSet().start.line - 1;
-    entityType = EntityType.RuleSet;
+    entityType = 'RuleSet';
   } else {
     let typedEntity: any;
     if (entity.profile()) {
       typedEntity = entity.profile();
-      entityType = EntityType.Profile;
+      entityType = 'Profile';
     } else if (entity.extension()) {
       typedEntity = entity.extension();
-      entityType = EntityType.Extension;
+      entityType = 'Extension';
     } else if (entity.logical()) {
       typedEntity = entity.logical();
-      entityType = EntityType.Logical;
+      entityType = 'Logical';
     } else if (entity.resource()) {
       typedEntity = entity.resource();
-      entityType = EntityType.Resource;
+      entityType = 'Resource';
     } else if (entity.instance()) {
       typedEntity = entity.instance();
-      entityType = EntityType.Instance;
+      entityType = 'Instance';
     } else if (entity.valueSet()) {
       typedEntity = entity.valueSet();
-      entityType = EntityType.ValueSet;
+      entityType = 'ValueSet';
     } else if (entity.codeSystem()) {
       typedEntity = entity.codeSystem();
-      entityType = EntityType.CodeSystem;
+      entityType = 'CodeSystem';
     } else if (entity.invariant()) {
       typedEntity = entity.invariant();
-      entityType = EntityType.Invariant;
+      entityType = 'Invariant';
     } else {
       typedEntity = entity.mapping();
-      entityType = EntityType.Mapping;
+      entityType = 'Mapping';
     }
     name = typedEntity.name().getText();
     startLine = typedEntity.start.line - 1;

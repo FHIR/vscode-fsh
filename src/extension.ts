@@ -12,6 +12,7 @@ import {
 
 import axios from 'axios';
 import { FshDefinitionProvider } from './FshDefinitionProvider';
+import { FshCompletionProvider } from './FshCompletionProvider';
 
 const FSH_MODE: DocumentFilter = { language: 'fsh', scheme: 'file' };
 // For FSH entity names and keywords, show the user FSH documentation.
@@ -72,13 +73,20 @@ export const SPECIAL_URLS = new Map<string, Uri>([
   ]
 ]);
 
-export function activate(context: ExtensionContext): FshDefinitionProvider {
+export function activate(
+  context: ExtensionContext
+): {
+  definitionProviderInstance: FshDefinitionProvider;
+  completionProviderInstance: FshCompletionProvider;
+} {
   const definitionProviderInstance = new FshDefinitionProvider();
+  const completionProviderInstance = new FshCompletionProvider(definitionProviderInstance);
   context.subscriptions.push(
-    languages.registerDefinitionProvider(FSH_MODE, definitionProviderInstance)
+    languages.registerDefinitionProvider(FSH_MODE, definitionProviderInstance),
+    languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance)
   );
   commands.registerCommand('extension.openFhir', openFhirDocumentation);
-  return definitionProviderInstance;
+  return { definitionProviderInstance, completionProviderInstance };
 }
 
 export async function openFhirDocumentation(): Promise<void> {

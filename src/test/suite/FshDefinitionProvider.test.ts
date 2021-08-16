@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import path from 'path';
 import fs from 'fs-extra';
 import * as parser from '../../parser';
-import { FshDefinitionProvider, EntityType } from '../../FshDefinitionProvider';
+import { FshDefinitionProvider } from '../../FshDefinitionProvider';
 
 chai.use(spies);
 const { assert, expect } = chai;
@@ -16,7 +16,7 @@ suite('FshDefinitionProvider', () => {
 
   before(() => {
     extension = vscode.extensions.getExtension('kmahalingam.vscode-language-fsh');
-    instance = extension?.exports as FshDefinitionProvider;
+    instance = extension?.exports.definitionProviderInstance as FshDefinitionProvider;
   });
 
   suite('#constructor', () => {
@@ -153,7 +153,7 @@ suite('FshDefinitionProvider', () => {
             ),
             new vscode.Position(74, 0)
           ),
-          type: EntityType.CodeSystem
+          type: 'CodeSystem'
         }
       ];
       assert.sameDeepMembers(
@@ -175,7 +175,7 @@ suite('FshDefinitionProvider', () => {
             ),
             new vscode.Position(8, 0)
           ),
-          type: EntityType.Profile
+          type: 'Profile'
         },
         {
           location: new vscode.Location(
@@ -184,7 +184,7 @@ suite('FshDefinitionProvider', () => {
             ),
             new vscode.Position(9, 0)
           ),
-          type: EntityType.ValueSet
+          type: 'ValueSet'
         }
       ];
       assert.sameDeepMembers(instance.nameInformation.get('ReusedName'), expectedInformation);
@@ -216,13 +216,13 @@ suite('FshDefinitionProvider', () => {
       assert.sameDeepMembers(instance.nameInformation.get('SimpleRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
       assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
     });
@@ -242,13 +242,13 @@ suite('FshDefinitionProvider', () => {
       assert.sameDeepMembers(instance.nameInformation.get('SimpleRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
       assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
     });
@@ -269,13 +269,13 @@ suite('FshDefinitionProvider', () => {
       assert.sameDeepMembers(instance.nameInformation.get('SimpleRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
       assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
     });
@@ -289,13 +289,13 @@ suite('FshDefinitionProvider', () => {
       instance.nameInformation.set('SimpleRuleSet', [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
       instance.nameInformation.set('ParamRuleSet', [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
       // update from one file
@@ -304,13 +304,13 @@ suite('FshDefinitionProvider', () => {
       assert.sameDeepMembers(instance.nameInformation.get('SimpleRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
       assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
     });
@@ -324,13 +324,13 @@ suite('FshDefinitionProvider', () => {
       instance.nameInformation.set('SimpleRuleSet', [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
       instance.nameInformation.set('ParamRuleSet', [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
       // try to update from one file,
@@ -345,13 +345,13 @@ suite('FshDefinitionProvider', () => {
       assert.sameDeepMembers(instance.nameInformation.get('SimpleRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
       assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0)),
-          type: EntityType.RuleSet
+          type: 'RuleSet'
         }
       ]);
     });
