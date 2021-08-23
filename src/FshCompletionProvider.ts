@@ -47,7 +47,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
           .trim();
         if (previousLine.length > 0) {
           if (previousLine.match(/Profile:/)) {
-            allowedTypes = ['Profile', 'Logical'];
+            allowedTypes = ['Profile', 'Logical', 'Resource', 'Extension'];
             break;
           } else if (previousLine.match(/Extension:/)) {
             allowedTypes = ['Extension'];

@@ -120,7 +120,7 @@ suite('FshDefinitionProvider', () => {
       );
     });
 
-    test('should have an entry in nameLocations for each name', () => {
+    test('should have an entry in nameInformation for each name', () => {
       assert.equal(instance.nameInformation.size, 18);
       assert.containsAllKeys(instance.nameInformation, [
         'MyObservation',

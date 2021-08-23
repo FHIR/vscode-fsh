@@ -109,7 +109,7 @@ export class FshDefinitionProvider implements DefinitionProvider {
       if (this.latestHashes.get(fshFile) !== newHash) {
         // a different hash means we have work to do!
         // if this file has already been parsed,
-        // clear out its old data from nameLocations.
+        // clear out its old data from nameInformation.
         if (this.fileNames.has(fshFile)) {
           const affectedNames = this.fileNames.get(fshFile);
           affectedNames.forEach(name => {

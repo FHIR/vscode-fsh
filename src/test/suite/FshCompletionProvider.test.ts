@@ -124,7 +124,7 @@ suite('FshCompletionProvider', () => {
       assert.lengthOf(result.extraNames, 0);
     });
 
-    test('should return Profile and Logical as allowed types when completing Parent for a Profile', async () => {
+    test('should return Profile, Logical, Resource, and Extension as allowed types when completing Parent for a Profile', async () => {
       const filePath = path.join(
         vscode.workspace.workspaceFolders[0].uri.fsPath,
         'codesystems.fsh'
@@ -138,7 +138,7 @@ suite('FshCompletionProvider', () => {
       );
       await vscode.workspace.applyEdit(fileChange);
       const result = instance.getAllowedTypesAndExtraNames(doc, new vscode.Position(81, 8));
-      assert.sameMembers(result.allowedTypes, ['Profile', 'Logical']);
+      assert.sameMembers(result.allowedTypes, ['Profile', 'Logical', 'Resource', 'Extension']);
       assert.lengthOf(result.extraNames, 0);
     });
 
