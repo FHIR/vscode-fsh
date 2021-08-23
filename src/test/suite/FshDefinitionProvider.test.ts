@@ -16,7 +16,7 @@ suite('FshDefinitionProvider', () => {
 
   before(() => {
     extension = vscode.extensions.getExtension('kmahalingam.vscode-language-fsh');
-    instance = extension?.exports as FshDefinitionProvider;
+    instance = extension?.exports.definitionProviderInstance as FshDefinitionProvider;
   });
 
   suite('#constructor', () => {
@@ -30,9 +30,9 @@ suite('FshDefinitionProvider', () => {
     test('should be active and initialized in our workspace', () => {
       assert.exists(instance);
       assert.instanceOf(instance, FshDefinitionProvider);
-      const { nameLocations, fileNames, fsWatcher } = instance;
-      assert.exists(nameLocations);
-      assert.isNotEmpty(nameLocations);
+      const { nameInformation, fileNames, fsWatcher } = instance;
+      assert.exists(nameInformation);
+      assert.isNotEmpty(nameInformation);
       assert.exists(fileNames);
       assert.isNotEmpty(fileNames);
       assert.exists(fsWatcher);
@@ -120,9 +120,9 @@ suite('FshDefinitionProvider', () => {
       );
     });
 
-    test('should have an entry in nameLocations for each name', () => {
-      assert.equal(instance.nameLocations.size, 18);
-      assert.containsAllKeys(instance.nameLocations, [
+    test('should have an entry in nameInformation for each name', () => {
+      assert.equal(instance.nameInformation.size, 18);
+      assert.containsAllKeys(instance.nameInformation, [
         'MyObservation',
         'MyPatient',
         'ReusedName',
@@ -144,34 +144,50 @@ suite('FshDefinitionProvider', () => {
       ]);
     });
 
-    test('should have the location stored for a name with one location', () => {
-      const expectedLocations = [
-        new vscode.Location(
-          vscode.Uri.file(
-            path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'codesystems.fsh')
+    test('should have the information stored for a name with one location', () => {
+      const expectedInformation = [
+        {
+          location: new vscode.Location(
+            vscode.Uri.file(
+              path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'codesystems.fsh')
+            ),
+            new vscode.Position(74, 0)
           ),
-          new vscode.Position(74, 0)
-        )
+          type: 'CodeSystem'
+        }
       ];
-      assert.sameDeepMembers(instance.nameLocations.get('AnotherCodeSystem'), expectedLocations);
+      assert.sameDeepMembers(
+        instance.nameInformation.get('AnotherCodeSystem'),
+        expectedInformation
+      );
     });
 
-    test('should have all locations stored for a name with multiple locations', () => {
-      const expectedLocations = [
-        new vscode.Location(
-          vscode.Uri.file(
-            path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'profiles', 'profiles1.fsh')
+    test('should have all information stored for a name with multiple locations', () => {
+      const expectedInformation = [
+        {
+          location: new vscode.Location(
+            vscode.Uri.file(
+              path.join(
+                vscode.workspace.workspaceFolders[0].uri.fsPath,
+                'profiles',
+                'profiles1.fsh'
+              )
+            ),
+            new vscode.Position(8, 0)
           ),
-          new vscode.Position(8, 0)
-        ),
-        new vscode.Location(
-          vscode.Uri.file(
-            path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'valuesets.fsh')
+          type: 'Profile'
+        },
+        {
+          location: new vscode.Location(
+            vscode.Uri.file(
+              path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'valuesets.fsh')
+            ),
+            new vscode.Position(9, 0)
           ),
-          new vscode.Position(9, 0)
-        )
+          type: 'ValueSet'
+        }
       ];
-      assert.sameDeepMembers(instance.nameLocations.get('ReusedName'), expectedLocations);
+      assert.sameDeepMembers(instance.nameInformation.get('ReusedName'), expectedInformation);
     });
   });
 
@@ -188,7 +204,7 @@ suite('FshDefinitionProvider', () => {
     test('should add information from a new file path', () => {
       // clear out all maps to force updates
       instance.fileNames.clear();
-      instance.nameLocations.clear();
+      instance.nameInformation.clear();
       instance.latestHashes.clear();
       // update from one file
       const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
@@ -196,19 +212,25 @@ suite('FshDefinitionProvider', () => {
       assert.equal(instance.fileNames.size, 1);
       assert.hasAllKeys(instance.fileNames, [filePath]);
       assert.sameMembers(instance.fileNames.get(filePath), ['SimpleRuleSet', 'ParamRuleSet']);
-      assert.hasAllKeys(instance.nameLocations, ['SimpleRuleSet', 'ParamRuleSet']);
-      assert.sameDeepMembers(instance.nameLocations.get('SimpleRuleSet'), [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0))
+      assert.hasAllKeys(instance.nameInformation, ['SimpleRuleSet', 'ParamRuleSet']);
+      assert.sameDeepMembers(instance.nameInformation.get('SimpleRuleSet'), [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
+          type: 'RuleSet'
+        }
       ]);
-      assert.sameDeepMembers(instance.nameLocations.get('ParamRuleSet'), [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0))
+      assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
+          type: 'RuleSet'
+        }
       ]);
     });
 
     test('should add information from a new file path', () => {
       // clear out all maps to force updates
       instance.fileNames.clear();
-      instance.nameLocations.clear();
+      instance.nameInformation.clear();
       instance.latestHashes.clear();
       // update from one file
       const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
@@ -216,19 +238,25 @@ suite('FshDefinitionProvider', () => {
       assert.equal(instance.fileNames.size, 1);
       assert.hasAllKeys(instance.fileNames, [filePath]);
       assert.sameMembers(instance.fileNames.get(filePath), ['SimpleRuleSet', 'ParamRuleSet']);
-      assert.hasAllKeys(instance.nameLocations, ['SimpleRuleSet', 'ParamRuleSet']);
-      assert.sameDeepMembers(instance.nameLocations.get('SimpleRuleSet'), [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0))
+      assert.hasAllKeys(instance.nameInformation, ['SimpleRuleSet', 'ParamRuleSet']);
+      assert.sameDeepMembers(instance.nameInformation.get('SimpleRuleSet'), [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
+          type: 'RuleSet'
+        }
       ]);
-      assert.sameDeepMembers(instance.nameLocations.get('ParamRuleSet'), [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0))
+      assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
+          type: 'RuleSet'
+        }
       ]);
     });
 
     test('should add information from a TextDocument', async () => {
       // clear out all maps to force updates
       instance.fileNames.clear();
-      instance.nameLocations.clear();
+      instance.nameInformation.clear();
       instance.latestHashes.clear();
       // update from one TextDocument
       const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
@@ -237,12 +265,18 @@ suite('FshDefinitionProvider', () => {
       assert.equal(instance.fileNames.size, 1);
       assert.hasAllKeys(instance.fileNames, [filePath]);
       assert.sameMembers(instance.fileNames.get(filePath), ['SimpleRuleSet', 'ParamRuleSet']);
-      assert.hasAllKeys(instance.nameLocations, ['SimpleRuleSet', 'ParamRuleSet']);
-      assert.sameDeepMembers(instance.nameLocations.get('SimpleRuleSet'), [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0))
+      assert.hasAllKeys(instance.nameInformation, ['SimpleRuleSet', 'ParamRuleSet']);
+      assert.sameDeepMembers(instance.nameInformation.get('SimpleRuleSet'), [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
+          type: 'RuleSet'
+        }
       ]);
-      assert.sameDeepMembers(instance.nameLocations.get('ParamRuleSet'), [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0))
+      assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
+          type: 'RuleSet'
+        }
       ]);
     });
 
@@ -252,20 +286,32 @@ suite('FshDefinitionProvider', () => {
       const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
       // modify both maps
       instance.fileNames.set(filePath, ['ThisGotDeleted', 'SimpleRuleSet', 'ParamRuleSet']);
-      instance.nameLocations.set('SimpleRuleSet', [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0))
+      instance.nameInformation.set('SimpleRuleSet', [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0)),
+          type: 'RuleSet'
+        }
       ]);
-      instance.nameLocations.set('ParamRuleSet', [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0))
+      instance.nameInformation.set('ParamRuleSet', [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0)),
+          type: 'RuleSet'
+        }
       ]);
       // update from one file
       instance.updateNamesFromFile(filePath);
       assert.sameMembers(instance.fileNames.get(filePath), ['SimpleRuleSet', 'ParamRuleSet']);
-      assert.sameDeepMembers(instance.nameLocations.get('SimpleRuleSet'), [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0))
+      assert.sameDeepMembers(instance.nameInformation.get('SimpleRuleSet'), [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
+          type: 'RuleSet'
+        }
       ]);
-      assert.sameDeepMembers(instance.nameLocations.get('ParamRuleSet'), [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0))
+      assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
+          type: 'RuleSet'
+        }
       ]);
     });
 
@@ -275,11 +321,17 @@ suite('FshDefinitionProvider', () => {
       const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh');
       // modify both maps
       instance.fileNames.set(filePath, ['ThisGotDeleted', 'SimpleRuleSet', 'ParamRuleSet']);
-      instance.nameLocations.set('SimpleRuleSet', [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0))
+      instance.nameInformation.set('SimpleRuleSet', [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0)),
+          type: 'RuleSet'
+        }
       ]);
-      instance.nameLocations.set('ParamRuleSet', [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0))
+      instance.nameInformation.set('ParamRuleSet', [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0)),
+          type: 'RuleSet'
+        }
       ]);
       // try to update from one file,
       instance.updateNamesFromFile(filePath);
@@ -290,11 +342,17 @@ suite('FshDefinitionProvider', () => {
         'SimpleRuleSet',
         'ParamRuleSet'
       ]);
-      assert.sameDeepMembers(instance.nameLocations.get('SimpleRuleSet'), [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0))
+      assert.sameDeepMembers(instance.nameInformation.get('SimpleRuleSet'), [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0)),
+          type: 'RuleSet'
+        }
       ]);
-      assert.sameDeepMembers(instance.nameLocations.get('ParamRuleSet'), [
-        new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0))
+      assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
+        {
+          location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0)),
+          type: 'RuleSet'
+        }
       ]);
     });
   });
@@ -311,31 +369,31 @@ suite('FshDefinitionProvider', () => {
     test('should remove information for a file path', () => {
       const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'valuesets.fsh');
       assert.exists(instance.fileNames.get(filePath));
-      assert.lengthOf(instance.nameLocations.get('MyValueSet'), 1);
-      assert.lengthOf(instance.nameLocations.get('ReusedName'), 2);
+      assert.lengthOf(instance.nameInformation.get('MyValueSet'), 1);
+      assert.lengthOf(instance.nameInformation.get('ReusedName'), 2);
       instance.handleDeletedFile(filePath);
       assert.notExists(instance.fileNames.get(filePath));
       assert.notExists(instance.latestHashes.get(filePath));
       // MyValueSet is only in this file, so it should be removed
-      assert.notExists(instance.nameLocations.get('MyValueSet'));
+      assert.notExists(instance.nameInformation.get('MyValueSet'));
       // ReusedName is in one other file, so that entry should still exist
-      assert.lengthOf(instance.nameLocations.get('ReusedName'), 1);
-      assert.notEqual(instance.nameLocations.get('ReusedName')[0].uri.fsPath, filePath);
+      assert.lengthOf(instance.nameInformation.get('ReusedName'), 1);
+      assert.notEqual(instance.nameInformation.get('ReusedName')[0].location.uri.fsPath, filePath);
     });
 
     test('should remove information for a file Uri', () => {
       const filePath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'valuesets.fsh');
       assert.exists(instance.fileNames.get(filePath));
-      assert.lengthOf(instance.nameLocations.get('MyValueSet'), 1);
-      assert.lengthOf(instance.nameLocations.get('ReusedName'), 2);
+      assert.lengthOf(instance.nameInformation.get('MyValueSet'), 1);
+      assert.lengthOf(instance.nameInformation.get('ReusedName'), 2);
       instance.handleDeletedFile(vscode.Uri.file(filePath));
       assert.notExists(instance.fileNames.get(filePath));
       assert.notExists(instance.latestHashes.get(filePath));
       // MyValueSet is only in this file, so it should be removed
-      assert.notExists(instance.nameLocations.get('MyValueSet'));
+      assert.notExists(instance.nameInformation.get('MyValueSet'));
       // ReusedName is in one other file, so that entry should still exist
-      assert.lengthOf(instance.nameLocations.get('ReusedName'), 1);
-      assert.notEqual(instance.nameLocations.get('ReusedName')[0].uri.fsPath, filePath);
+      assert.lengthOf(instance.nameInformation.get('ReusedName'), 1);
+      assert.notEqual(instance.nameInformation.get('ReusedName')[0].location.uri.fsPath, filePath);
     });
   });
 
@@ -369,8 +427,8 @@ suite('FshDefinitionProvider', () => {
       );
       await vscode.workspace.applyEdit(fileChange);
       instance.handleDirtyFiles();
-      assert.notExists(instance.nameLocations.get('MyCodeSystem'));
-      assert.exists(instance.nameLocations.get('AnimalCodeSystem'));
+      assert.notExists(instance.nameInformation.get('MyCodeSystem'));
+      assert.exists(instance.nameInformation.get('AnimalCodeSystem'));
     });
 
     test('should not parse a modified file if its hash has not changed', async () => {

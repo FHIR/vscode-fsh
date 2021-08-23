@@ -14,9 +14,27 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 
+export type EntityType =
+  | 'Alias'
+  | 'RuleSet'
+  | 'Profile'
+  | 'Extension'
+  | 'Logical'
+  | 'Resource'
+  | 'Instance'
+  | 'ValueSet'
+  | 'CodeSystem'
+  | 'Invariant'
+  | 'Mapping';
+
+export type NameInfo = {
+  location: Location;
+  type: EntityType;
+};
+
 export class FshDefinitionProvider implements DefinitionProvider {
-  // nameLocations provides a map from a name to all of that name's locations.
-  nameLocations: Map<string, Location[]> = new Map();
+  // nameInformation provides a map from a name to all of that name's locations and types
+  nameInformation: Map<string, NameInfo[]> = new Map();
   // fileNames provides a map from a file path to all of the names in that file
   fileNames: Map<string, string[]> = new Map();
   // latestHashes provides a map from a file path to that file's most recent hash
@@ -35,7 +53,7 @@ export class FshDefinitionProvider implements DefinitionProvider {
   }
 
   public scanAll(): void {
-    this.nameLocations.clear();
+    this.nameInformation.clear();
     this.fileNames.clear();
     this.latestHashes.clear();
     // get all our fsh files
@@ -53,16 +71,17 @@ export class FshDefinitionProvider implements DefinitionProvider {
       // RuleSet, ValueSet
       if (doc.entity() && doc.entity().length > 0) {
         for (const entity of doc.entity()) {
-          const { name, startLine } = getNameAndLine(entity);
+          const { name, startLine, entityType } = getNameAndLine(entity);
           // if we found a name, add it to our maps
           if (name) {
             this.fileNames.get(fshFile).push(name);
-            if (!this.nameLocations.has(name)) {
-              this.nameLocations.set(name, []);
+            if (!this.nameInformation.has(name)) {
+              this.nameInformation.set(name, []);
             }
-            this.nameLocations
-              .get(name)
-              .push(new Location(Uri.file(fshFile), new Position(startLine, 0)));
+            this.nameInformation.get(name).push({
+              location: new Location(Uri.file(fshFile), new Position(startLine, 0)),
+              type: entityType
+            });
           }
         }
       }
@@ -90,20 +109,20 @@ export class FshDefinitionProvider implements DefinitionProvider {
       if (this.latestHashes.get(fshFile) !== newHash) {
         // a different hash means we have work to do!
         // if this file has already been parsed,
-        // clear out its old data from nameLocations.
+        // clear out its old data from nameInformation.
         if (this.fileNames.has(fshFile)) {
           const affectedNames = this.fileNames.get(fshFile);
           affectedNames.forEach(name => {
-            const oldLocations = this.nameLocations.get(name) ?? [];
-            this.nameLocations.set(
+            const oldInformation = this.nameInformation.get(name) ?? [];
+            this.nameInformation.set(
               name,
-              oldLocations.filter(location => {
-                return location.uri.fsPath !== fshFile;
+              oldInformation.filter(nameInfo => {
+                return nameInfo.location.uri.fsPath !== fshFile;
               })
             );
-            // if a name has no remaining locations, it's gone!
-            if (this.nameLocations.get(name).length === 0) {
-              this.nameLocations.delete(name);
+            // if a name has no remaining information, it's gone!
+            if (this.nameInformation.get(name).length === 0) {
+              this.nameInformation.delete(name);
             }
           });
         }
@@ -112,16 +131,17 @@ export class FshDefinitionProvider implements DefinitionProvider {
         const newNames: string[] = [];
         if (doc.entity() && doc.entity().length > 0) {
           for (const entity of doc.entity()) {
-            const { name, startLine } = getNameAndLine(entity);
+            const { name, startLine, entityType } = getNameAndLine(entity);
             // if we found a name, add it to our maps
             if (name) {
               newNames.push(name);
-              if (!this.nameLocations.has(name)) {
-                this.nameLocations.set(name, []);
+              if (!this.nameInformation.has(name)) {
+                this.nameInformation.set(name, []);
               }
-              this.nameLocations
-                .get(name)
-                .push(new Location(Uri.file(fshFile), new Position(startLine, 0)));
+              this.nameInformation.get(name).push({
+                location: new Location(Uri.file(fshFile), new Position(startLine, 0)),
+                type: entityType
+              });
             }
           }
         }
@@ -143,15 +163,15 @@ export class FshDefinitionProvider implements DefinitionProvider {
         // remove any locations pointing to this file
         const affectedNames = this.fileNames.get(knownFile);
         affectedNames.forEach(name => {
-          const oldLocations = this.nameLocations.get(name) ?? [];
-          const newLocations = oldLocations.filter(location => {
-            return location.uri.fsPath !== knownFile;
+          const oldInformation = this.nameInformation.get(name) ?? [];
+          const newInformation = oldInformation.filter(nameInfo => {
+            return nameInfo.location.uri.fsPath !== knownFile;
           });
-          // if a name has no remaining locations, it's gone!
-          if (newLocations.length) {
-            this.nameLocations.set(name, newLocations);
+          // if a name has no remaining information, it's gone!
+          if (newInformation.length) {
+            this.nameInformation.set(name, newInformation);
           } else {
-            this.nameLocations.delete(name);
+            this.nameInformation.delete(name);
           }
         });
         // remove this file from the fileNames and latestHashes maps
@@ -181,7 +201,7 @@ export class FshDefinitionProvider implements DefinitionProvider {
         // Update info for all files that have been modified, but not saved
         this.handleDirtyFiles();
         const name = getTargetName(document, position);
-        resolve(this.nameLocations.get(name));
+        resolve(this.nameInformation.get(name).map(info => info.location));
       } catch (e) {
         reject(e);
       }
@@ -189,37 +209,61 @@ export class FshDefinitionProvider implements DefinitionProvider {
   }
 }
 
-function getNameAndLine(entity: any): { name: string; startLine: number } {
+function getNameAndLine(entity: any): { name: string; startLine: number; entityType: EntityType } {
   let name: string;
   let startLine: number;
+  let entityType: EntityType;
   // some entities work a little differently
   if (entity.alias()) {
     name = entity.alias().SEQUENCE()[0].getText();
     startLine = entity.alias().start.line - 1;
+    entityType = 'Alias';
   } else if (entity.ruleSet()) {
     name = entity.ruleSet().RULESET_REFERENCE().getText().trim();
     startLine = entity.ruleSet().start.line - 1;
+    entityType = 'RuleSet';
   } else if (entity.paramRuleSet()) {
     const rulesetReference = entity.paramRuleSet().PARAM_RULESET_REFERENCE().getText();
     const paramListStart = rulesetReference.indexOf('(');
     name = rulesetReference.slice(0, paramListStart).trim();
     startLine = entity.paramRuleSet().start.line - 1;
+    entityType = 'RuleSet';
   } else {
-    const typedEntity =
-      entity.profile() ??
-      entity.extension() ??
-      entity.logical() ??
-      entity.resource() ??
-      entity.instance() ??
-      entity.valueSet() ??
-      entity.codeSystem() ??
-      entity.invariant() ??
-      entity.mapping();
+    let typedEntity: any;
+    if (entity.profile()) {
+      typedEntity = entity.profile();
+      entityType = 'Profile';
+    } else if (entity.extension()) {
+      typedEntity = entity.extension();
+      entityType = 'Extension';
+    } else if (entity.logical()) {
+      typedEntity = entity.logical();
+      entityType = 'Logical';
+    } else if (entity.resource()) {
+      typedEntity = entity.resource();
+      entityType = 'Resource';
+    } else if (entity.instance()) {
+      typedEntity = entity.instance();
+      entityType = 'Instance';
+    } else if (entity.valueSet()) {
+      typedEntity = entity.valueSet();
+      entityType = 'ValueSet';
+    } else if (entity.codeSystem()) {
+      typedEntity = entity.codeSystem();
+      entityType = 'CodeSystem';
+    } else if (entity.invariant()) {
+      typedEntity = entity.invariant();
+      entityType = 'Invariant';
+    } else {
+      typedEntity = entity.mapping();
+      entityType = 'Mapping';
+    }
     name = typedEntity.name().getText();
     startLine = typedEntity.start.line - 1;
   }
   return {
     name,
-    startLine
+    startLine,
+    entityType
   };
 }
