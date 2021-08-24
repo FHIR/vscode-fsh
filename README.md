@@ -40,6 +40,14 @@ the &lt;TAB&gt; key to move to the next placeholder. All FSH snippets always sto
 | `map`   | Mapping    | Mapping, Source, Target, Id, Title (auto), Description          |
 | `rs `   | RuleSet    | RuleSet                                                         |
 
+## Enhanced Autocomplete
+
+FSH entity definitions have their names provided as autocomplete results in contextually appropriate scenarios.
+
+- After the `Parent` keyword, results will include `Profile`, `Extension`, `Logical`, and `Resource` names depending on the type of entity being defined.
+- After the `InstanceOf` keyword, results will include `Profile`, `Extension`, and `Resource` names.
+- When writing an `obeys` rule, results will include `Invariant` names.
+
 ## Go to Definition
 
 ![FSH Go to Definition](images/docs/fsh-go-to-definition.gif)
