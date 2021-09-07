@@ -9,7 +9,25 @@ import {
 } from 'vscode';
 import { EntityType, FshDefinitionProvider } from './FshDefinitionProvider';
 
+export type PackageContents = {
+  files: {
+    filename: string;
+    resourceType: string;
+    id: string;
+    url: string;
+    type?: string;
+    kind?: string;
+  }[];
+};
+
 export class FshCompletionProvider implements CompletionItemProvider {
+  fhirEntities: {
+    resources: CompletionItem[];
+    extensions: CompletionItem[];
+    codeSystems: CompletionItem[];
+    valueSets: CompletionItem[];
+  } = { resources: [], extensions: [], codeSystems: [], valueSets: [] };
+
   constructor(private definitionProvider: FshDefinitionProvider) {}
 
   public getAllowedTypesAndExtraNames(
@@ -78,6 +96,40 @@ export class FshCompletionProvider implements CompletionItemProvider {
     return { allowedTypes, extraNames };
   }
 
+  public updateFhirEntities(packageIndex: PackageContents): void {
+    if (packageIndex.files?.length) {
+      const updatedEntities: FshCompletionProvider['fhirEntities'] = {
+        resources: [],
+        extensions: [],
+        codeSystems: [],
+        valueSets: []
+      };
+      packageIndex.files.forEach(entityInfo => {
+        if (entityInfo.resourceType === 'StructureDefinition') {
+          if (entityInfo.type === 'Extension') {
+            const item = new CompletionItem(entityInfo.id);
+            item.detail = 'FHIR Extension';
+            updatedEntities.extensions.push(item);
+          } else if (entityInfo.id === entityInfo.type) {
+            const item = new CompletionItem(entityInfo.id);
+            item.detail = 'FHIR Resource';
+            updatedEntities.resources.push(item);
+            // This condition will succeed for FHIR types and resources, but fail for examples.
+          }
+        } else if (entityInfo.resourceType === 'ValueSet') {
+          const item = new CompletionItem(entityInfo.id);
+          item.detail = 'FHIR ValueSet';
+          updatedEntities.valueSets.push(item);
+        } else if (entityInfo.resourceType === 'CodeSystem') {
+          const item = new CompletionItem(entityInfo.id);
+          item.detail = 'FHIR CodeSystem';
+          updatedEntities.codeSystems.push(item);
+        }
+      });
+      this.fhirEntities = updatedEntities;
+    }
+  }
+
   public getEntityItems(allowedTypes: EntityType[]): CompletionItem[] {
     const entityItems: CompletionItem[] = [];
     this.definitionProvider.nameInformation.forEach((info, name) => {
@@ -93,6 +145,23 @@ export class FshCompletionProvider implements CompletionItemProvider {
     return entityItems;
   }
 
+  public getFhirItems(allowedTypes: EntityType[]): CompletionItem[] {
+    const fhirItems: CompletionItem[] = [];
+    if (allowedTypes.includes('Resource')) {
+      fhirItems.push(...this.fhirEntities.resources);
+    }
+    if (allowedTypes.includes('Extension')) {
+      fhirItems.push(...this.fhirEntities.extensions);
+    }
+    if (allowedTypes.includes('CodeSystem')) {
+      fhirItems.push(...this.fhirEntities.codeSystems);
+    }
+    if (allowedTypes.includes('ValueSet')) {
+      fhirItems.push(...this.fhirEntities.valueSets);
+    }
+    return fhirItems;
+  }
+
   public provideCompletionItems(
     document: TextDocument,
     position: Position
@@ -105,8 +174,9 @@ export class FshCompletionProvider implements CompletionItemProvider {
           reject();
         } else {
           const { allowedTypes, extraNames } = allowedInfo;
+          const fhirItems = this.getFhirItems(allowedTypes);
           const names = this.getEntityItems(allowedTypes);
-          resolve(names.concat(extraNames));
+          resolve(names.concat(extraNames, fhirItems));
         }
       } catch (err) {
         reject(err);

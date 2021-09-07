@@ -3,7 +3,7 @@ import { before, afterEach } from 'mocha';
 import * as vscode from 'vscode';
 import path from 'path';
 import { EOL } from 'os';
-import { FshCompletionProvider } from '../../FshCompletionProvider';
+import { FshCompletionProvider, PackageContents } from '../../FshCompletionProvider';
 
 const { assert } = chai;
 
@@ -279,6 +279,126 @@ suite('FshCompletionProvider', () => {
         employeeItem,
         ptItem
       ]);
+    });
+  });
+
+  suite('#getFhirItems', () => {
+    before(() => {
+      // set up a small set of FHIR items
+      const fhirResources = [new vscode.CompletionItem('Patient')];
+      const fhirExtensions = [new vscode.CompletionItem('goal-reasonRejected')];
+      const fhirCodeSystems = [new vscode.CompletionItem('composition-attestation-mode')];
+      const fhirValueSets = [new vscode.CompletionItem('goal-start-event')];
+      instance.fhirEntities = {
+        resources: fhirResources,
+        extensions: fhirExtensions,
+        codeSystems: fhirCodeSystems,
+        valueSets: fhirValueSets
+      };
+    });
+
+    test('should return all CompletionItems that match the provided type when one type is provided', () => {
+      const items = instance.getFhirItems(['Extension']);
+      assert.lengthOf(items, 1);
+      const extensionItem = new vscode.CompletionItem('goal-reasonRejected');
+      assert.includeDeepMembers(items, [extensionItem]);
+    });
+
+    test('should return all CompletionItems that match at least one provided type when multiple types are provided', () => {
+      const items = instance.getFhirItems(['Resource', 'CodeSystem', 'ValueSet']);
+      assert.lengthOf(items, 3);
+      const resourceItem = new vscode.CompletionItem('Patient');
+      const codeSystemItem = new vscode.CompletionItem('composition-attestation-mode');
+      const valueSetItem = new vscode.CompletionItem('goal-start-event');
+      assert.includeDeepMembers(items, [resourceItem, codeSystemItem, valueSetItem]);
+    });
+  });
+
+  suite('#updateFhirEntities', () => {
+    test('should set the FHIR entities based on their attributes', () => {
+      const packageIndex: PackageContents = {
+        files: [
+          {
+            filename: 'ValueSet-some-value-set.json',
+            resourceType: 'ValueSet',
+            id: 'some-value-set',
+            url: 'http://hl7.org/fhir/ValueSet/some-value-set'
+          },
+          {
+            filename: 'SearchParameter-SomeInterestingResource-feature.json',
+            resourceType: 'SearchParameter',
+            id: 'SomeInterestingResource-feature',
+            url: 'http://hl7.org/fhir/SearchParameter/SomeInterestingResource-feature',
+            type: 'token'
+          },
+          {
+            filename: 'CodeSystem-some-code-system.json',
+            resourceType: 'CodeSystem',
+            id: 'some-code-system',
+            url: 'http://terminology.hl7.org/CodeSystem/some-code-system'
+          },
+          {
+            filename: 'StructureDefinition-SomeInterestingResource.json',
+            resourceType: 'StructureDefinition',
+            id: 'SomeInterestingResource',
+            url: 'http://hl7.org/fhir/StructureDefinition/SomeInterestingResource',
+            kind: 'resource',
+            type: 'SomeInterestingResource'
+          },
+          {
+            filename: 'StructureDefinition-some-profile.json',
+            resourceType: 'StructureDefinition',
+            id: 'some-profile',
+            url: 'http://hl7.org/fhir/StructureDefinition/some-profile',
+            kind: 'resource',
+            type: 'SomeInterestingResource'
+          },
+          {
+            filename: 'StructureDefinition-useful-extension.json',
+            resourceType: 'StructureDefinition',
+            id: 'useful-extension',
+            url: 'http://hl7.org/fhir/StructureDefinition/useful-extension',
+            kind: 'complex-type',
+            type: 'Extension'
+          }
+        ]
+      };
+      instance.updateFhirEntities(packageIndex);
+      const expectedResource = new vscode.CompletionItem('SomeInterestingResource');
+      expectedResource.detail = 'FHIR Resource';
+      const expectedExtension = new vscode.CompletionItem('useful-extension');
+      expectedExtension.detail = 'FHIR Extension';
+      const expectedCodeSystem = new vscode.CompletionItem('some-code-system');
+      expectedCodeSystem.detail = 'FHIR CodeSystem';
+      const expectedValueSet = new vscode.CompletionItem('some-value-set');
+      expectedValueSet.detail = 'FHIR ValueSet';
+      assert.deepEqual(instance.fhirEntities, {
+        resources: [expectedResource],
+        extensions: [expectedExtension],
+        codeSystems: [expectedCodeSystem],
+        valueSets: [expectedValueSet]
+      });
+    });
+
+    test('should not change the existing FHIR entities when no files are provided', () => {
+      // set up a small set of FHIR items
+      const fhirResources = [new vscode.CompletionItem('Patient')];
+      const fhirExtensions = [new vscode.CompletionItem('goal-reasonRejected')];
+      const fhirCodeSystems = [new vscode.CompletionItem('composition-attestation-mode')];
+      const fhirValueSets = [new vscode.CompletionItem('goal-start-event')];
+      instance.fhirEntities = {
+        resources: fhirResources,
+        extensions: fhirExtensions,
+        codeSystems: fhirCodeSystems,
+        valueSets: fhirValueSets
+      };
+      instance.updateFhirEntities({ files: [] });
+      assert.deepEqual(instance.fhirEntities, {
+        resources: fhirResources,
+        extensions: fhirExtensions,
+        codeSystems: fhirCodeSystems,
+        valueSets: fhirValueSets
+      });
     });
   });
 });

@@ -7,12 +7,14 @@ import {
   TextDocument,
   Position,
   env,
-  Uri
+  Uri,
+  workspace
 } from 'vscode';
 
 import axios from 'axios';
+import path from 'path';
 import { FshDefinitionProvider } from './FshDefinitionProvider';
-import { FshCompletionProvider } from './FshCompletionProvider';
+import { FshCompletionProvider, PackageContents } from './FshCompletionProvider';
 
 const FSH_MODE: DocumentFilter = { language: 'fsh', scheme: 'file' };
 // For FSH entity names and keywords, show the user FSH documentation.
@@ -86,7 +88,72 @@ export function activate(
     languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance)
   );
   commands.registerCommand('extension.openFhir', openFhirDocumentation);
+  updateFhirDefinitions(
+    completionProviderInstance,
+    workspace.getConfiguration('fsh').get<string>('fhirCachePath')
+  );
+  workspace.onDidChangeConfiguration(event => {
+    if (event.affectsConfiguration('fsh.fhirCachePath')) {
+      updateFhirDefinitions(
+        completionProviderInstance,
+        workspace.getConfiguration('fsh').get<string>('fhirCachePath')
+      );
+    }
+  });
   return { definitionProviderInstance, completionProviderInstance };
+}
+
+export async function updateFhirDefinitions(
+  completionProviderInstance: FshCompletionProvider,
+  cachePath: string
+): Promise<void> {
+  if (cachePath && path.isAbsolute(cachePath)) {
+    let packagePath = cachePath;
+    try {
+      await workspace.fs.stat(Uri.file(packagePath));
+      // we expect this to be the path that ends in .fhir
+      // but the user may have gone deeper
+      // so be kind of flexible about it
+      // first, dive into "packages"
+      try {
+        await workspace.fs.stat(Uri.file(path.join(packagePath, 'packages')));
+        packagePath = path.join(packagePath, 'packages');
+      } catch (err) {
+        // Couldn't dive into "packages". But that might be okay.
+      }
+      // then, dive into the fhir core package
+      // default is to go with hl7.fhir.r4.core#version
+      try {
+        await workspace.fs.stat(Uri.file(path.join(packagePath, 'hl7.fhir.r4.core#4.0.1')));
+        packagePath = path.join(packagePath, 'hl7.fhir.r4.core#4.0.1');
+      } catch (err) {
+        // Couldn't dive into "hl7.fhir.r4.core#4.0.1". But that might be okay.
+      }
+      // then, one more dive, into the "package" directory
+      try {
+        await workspace.fs.stat(Uri.file(path.join(packagePath, 'package')));
+        packagePath = path.join(packagePath, 'package');
+      } catch (err) {
+        // Couldn't dive into "package". But that might be okay.
+      }
+    } catch (err) {
+      // if we're out here, the initial stat failed, which meant we couldn't stat the directory the user provided.
+      // so, nothing we can do.
+      throw new Error(`Couldn't load FHIR definitions from path: ${packagePath}`);
+    }
+    // then, we're done diving. we should have a file named .index.json, which will tell us what we want to know
+    try {
+      const fileContents = await workspace.fs.readFile(
+        Uri.file(path.join(packagePath, '.index.json'))
+      );
+      const decoder = new TextDecoder();
+      const decodedContents = decoder.decode(fileContents);
+      const parsedContents = JSON.parse(decodedContents) as PackageContents;
+      completionProviderInstance.updateFhirEntities(parsedContents);
+    } catch (err) {
+      throw new Error("Couldn't read definition information from FHIR package.");
+    }
+  }
 }
 
 export async function openFhirDocumentation(): Promise<void> {
