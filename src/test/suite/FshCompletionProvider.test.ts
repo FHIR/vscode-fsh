@@ -1,11 +1,17 @@
 import chai from 'chai';
+import spies from 'chai-spies';
 import { before, afterEach } from 'mocha';
 import * as vscode from 'vscode';
 import path from 'path';
 import { EOL } from 'os';
 import { FshCompletionProvider, PackageContents } from '../../FshCompletionProvider';
 
-const { assert } = chai;
+chai.use(spies);
+const { assert, expect } = chai;
+
+// Since the tests actually run from the build output directory,
+// use this path to help find the FHIR caches we use.
+const TEST_ROOT = path.join(__dirname, '..', '..', '..', 'src', 'test');
 
 suite('FshCompletionProvider', () => {
   let extension: vscode.Extension<any>;
@@ -315,6 +321,79 @@ suite('FshCompletionProvider', () => {
   });
 
   suite('#updateFhirEntities', () => {
+    afterEach(() => {
+      chai.spy.restore();
+    });
+
+    test('should update from a package index when given a valid cache path', async () => {
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      await instance.updateFhirEntities(path.join(TEST_ROOT, '.fhir'));
+      expect(processSpy).to.have.been.called.exactly(1);
+    });
+
+    test('should update from a package index when given a valid path to the cache packages directory', async () => {
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      await instance.updateFhirEntities(path.join(TEST_ROOT, '.fhir', 'packages'));
+      expect(processSpy).to.have.been.called.exactly(1);
+    });
+
+    test('should update from a package index when given a valid path to the cache FHIR core directory', async () => {
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      await instance.updateFhirEntities(
+        path.join(TEST_ROOT, '.fhir', 'packages', 'hl7.fhir.r4.core#4.0.1')
+      );
+      expect(processSpy).to.have.been.called.exactly(1);
+    });
+
+    test('should update from a package index when given a valid path to the cache FHIR core package directory', async () => {
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      await instance.updateFhirEntities(
+        path.join(TEST_ROOT, '.fhir', 'packages', 'hl7.fhir.r4.core#4.0.1', 'package')
+      );
+      expect(processSpy).to.have.been.called.exactly(1);
+    });
+
+    test('should not update anything when the cache path is null', async () => {
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      await instance.updateFhirEntities(null);
+      expect(processSpy).to.have.been.called.exactly(0);
+    });
+
+    test('should throw an error when the cache path does not exist', async () => {
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      try {
+        await instance.updateFhirEntities(path.join(__dirname, 'nonsense', 'path'));
+        assert.fail('updateFhirEntities should have thrown an error.');
+      } catch (err) {
+        assert.match(err, /Couldn't load FHIR definitions from path/);
+      }
+      expect(processSpy).to.have.been.called.exactly(0);
+    });
+
+    test('should throw an error when the cache path exists, but the package index is not found', async () => {
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      try {
+        await instance.updateFhirEntities(path.join(TEST_ROOT, '.fhir-no-index'));
+        assert.fail('updateFhirEntities should have thrown an error.');
+      } catch (err) {
+        assert.match(err, /Couldn't read definition information from FHIR package/);
+      }
+      expect(processSpy).to.have.been.called.exactly(0);
+    });
+
+    test('should throw an error when the cache path exists, but the package index is not valid JSON', async () => {
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      try {
+        await instance.updateFhirEntities(path.join(TEST_ROOT, '.fhir-not-json'));
+        assert.fail('updateFhirEntities should have thrown an error.');
+      } catch (err) {
+        assert.match(err, /Couldn't read definition information from FHIR package/);
+      }
+      expect(processSpy).to.have.been.called.exactly(0);
+    });
+  });
+
+  suite('#processPackageContents', () => {
     test('should set the FHIR entities based on their attributes', () => {
       const packageIndex: PackageContents = {
         files: [
@@ -363,7 +442,7 @@ suite('FshCompletionProvider', () => {
           }
         ]
       };
-      instance.updateFhirEntities(packageIndex);
+      instance.processPackageContents(packageIndex);
       const expectedResource = new vscode.CompletionItem('SomeInterestingResource');
       expectedResource.detail = 'FHIR Resource';
       const expectedExtension = new vscode.CompletionItem('useful-extension');
@@ -392,7 +471,7 @@ suite('FshCompletionProvider', () => {
         codeSystems: fhirCodeSystems,
         valueSets: fhirValueSets
       };
-      instance.updateFhirEntities({ files: [] });
+      instance.processPackageContents({ files: [] });
       assert.deepEqual(instance.fhirEntities, {
         resources: fhirResources,
         extensions: fhirExtensions,
