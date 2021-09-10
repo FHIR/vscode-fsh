@@ -321,36 +321,88 @@ suite('FshCompletionProvider', () => {
   });
 
   suite('#updateFhirEntities', () => {
-    afterEach(() => {
+    const defaultConfig = [
+      'id: cookie.mountain',
+      'FSHOnly: false',
+      'name: HL7FHIRImplementationGuideCookieMountain',
+      'fhirVersion: 4.0.1',
+      'copyrightYear: 2020+',
+      'releaseLabel: CI Build',
+      ''
+    ].join(EOL);
+
+    afterEach(async () => {
+      // delete the sushi config file, if we made one
+      const configFiles = await vscode.workspace.findFiles('sushi-config.{yaml,yml}');
+      for (const configFile of configFiles) {
+        await vscode.workspace.fs.delete(configFile);
+      }
       chai.spy.restore();
     });
 
-    test('should update from a package index when given a valid cache path', async () => {
+    test('should update from a package index from the default FHIR version when there is no SUSHI config', async () => {
       const processSpy = chai.spy.on(instance, 'processPackageContents');
       await instance.updateFhirEntities(path.join(TEST_ROOT, '.fhir'));
       expect(processSpy).to.have.been.called.exactly(1);
+      expect(processSpy).to.have.been.called.with.exactly({
+        comment: 'This is the index file for FHIR version 4.0.1.',
+        files: []
+      });
     });
 
-    test('should update from a package index when given a valid path to the cache packages directory', async () => {
-      const processSpy = chai.spy.on(instance, 'processPackageContents');
-      await instance.updateFhirEntities(path.join(TEST_ROOT, '.fhir', 'packages'));
-      expect(processSpy).to.have.been.called.exactly(1);
-    });
-
-    test('should update from a package index when given a valid path to the cache FHIR core directory', async () => {
-      const processSpy = chai.spy.on(instance, 'processPackageContents');
-      await instance.updateFhirEntities(
-        path.join(TEST_ROOT, '.fhir', 'packages', 'hl7.fhir.r4.core#4.0.1')
+    test('should update from a package index from the specified version of hl7.fhir.r4b.core when there is a SUSHI config', async () => {
+      // create sushi-config.yaml with fhirVersion: 4.3.0
+      const configContents = defaultConfig.replace('4.0.1', '4.3.0');
+      const configPath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'sushi-config.yaml'
       );
+      await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
+      // update entities using specified version
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      await instance.updateFhirEntities(path.join(TEST_ROOT, '.fhir'));
       expect(processSpy).to.have.been.called.exactly(1);
+      expect(processSpy).to.have.been.called.with.exactly({
+        comment: 'This is the index file for FHIR version 4.3.0.',
+        files: []
+      });
     });
 
-    test('should update from a package index when given a valid path to the cache FHIR core package directory', async () => {
-      const processSpy = chai.spy.on(instance, 'processPackageContents');
-      await instance.updateFhirEntities(
-        path.join(TEST_ROOT, '.fhir', 'packages', 'hl7.fhir.r4.core#4.0.1', 'package')
+    test('should update from a package index from the specified version of hl7.fhir.r5.core when there is a SUSHI config', async () => {
+      // create sushi-config.yml with fhirVersion: 4.8.2
+      const configContents = defaultConfig.replace('4.0.1', '4.8.2');
+      const configPath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'sushi-config.yml'
       );
+      await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
+      // update entities using specified version
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      await instance.updateFhirEntities(path.join(TEST_ROOT, '.fhir'));
       expect(processSpy).to.have.been.called.exactly(1);
+      expect(processSpy).to.have.been.called.with.exactly({
+        comment: 'This is the index file for FHIR version 4.8.2.',
+        files: []
+      });
+    });
+
+    test('should throw an error when a SUSHI config exists, but specifies a FHIR version not present in the cache', async () => {
+      // create sushi-config.yml with fhirVersion: 4.7.3
+      const configContents = defaultConfig.replace('4.0.1', '4.7.3');
+      const configPath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'sushi-config.yml'
+      );
+      await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
+      // update entities using specified version
+      const processSpy = chai.spy.on(instance, 'processPackageContents');
+      try {
+        await instance.updateFhirEntities(path.join(TEST_ROOT, '.fhir'));
+        assert.fail('updateFhirEntities should have thrown an error.');
+      } catch (err) {
+        assert.match(err, /Couldn't load FHIR definitions from path/);
+      }
+      expect(processSpy).to.have.been.called.exactly(0);
     });
 
     test('should not update anything when the cache path is null', async () => {

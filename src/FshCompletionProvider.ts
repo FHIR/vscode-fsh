@@ -10,6 +10,7 @@ import {
   Uri
 } from 'vscode';
 import { EntityType, FshDefinitionProvider } from './FshDefinitionProvider';
+import YAML from 'yaml';
 import path = require('path');
 
 export type PackageContents = {
@@ -21,6 +22,19 @@ export type PackageContents = {
     type?: string;
     kind?: string;
   }[];
+};
+
+type DependencyDetails = {
+  id: string;
+  uri: string;
+  version: string | number;
+};
+
+type SushiConfiguration = {
+  fhirVersion: string | string[];
+  dependencies?: {
+    [key: string]: string | number | DependencyDetails;
+  };
 };
 
 export class FshCompletionProvider implements CompletionItemProvider {
@@ -104,33 +118,53 @@ export class FshCompletionProvider implements CompletionItemProvider {
       let packagePath = cachePath;
       try {
         await workspace.fs.stat(Uri.file(packagePath));
-        // we expect this to be the path that ends in .fhir
-        // but the user may have gone deeper
-        // so be kind of flexible about it
-        // first, dive into "packages"
-        try {
-          await workspace.fs.stat(Uri.file(path.join(packagePath, 'packages')));
-          packagePath = path.join(packagePath, 'packages');
-        } catch (err) {
-          // Couldn't dive into "packages". But that might be okay.
+        // we expect this to be the path that ends in ".fhir"
+        // since we try to read the SUSHI config to get the FHIR version,
+        // we will be strict about this. this is to help avoid cases where a user
+        // inadvertantly sets the config to a specific FHIR version that doesn't
+        // match what their SUSHI config will use.
+        // if SUSHI config is in the workspace, check the fhirVersion there
+        const configFiles = await workspace.findFiles('sushi-config.{yaml,yml}');
+        // default is to go with hl7.fhir.r4.core#4.0.1
+        let fhirPackage = 'hl7.fhir.r4.core';
+        let fhirVersion = '4.0.1';
+        // const dependencies: string[] = [];
+        if (configFiles.length > 0) {
+          const configContents = await workspace.fs.readFile(configFiles[0]);
+          const decoder = new TextDecoder();
+          const decodedConfig = decoder.decode(configContents);
+          const parsedConfig: SushiConfiguration = YAML.parse(decodedConfig);
+          // try to get version: if there's more than one, use the first one that is recognized
+          const listedVersions = Array.isArray(parsedConfig.fhirVersion)
+            ? parsedConfig.fhirVersion
+            : [parsedConfig.fhirVersion];
+          fhirVersion = listedVersions
+            .map(version => {
+              const versionMatch = version.match(/^#?(\S*)/);
+              if (versionMatch) {
+                return versionMatch[1];
+              }
+            })
+            .find(version => /current|4\.0\.1|4\.[1-9]\d*.\d+/.test(version));
+          if (!fhirVersion) {
+            throw new Error('No valid FHIR versions in configuration.');
+          }
+          if (/^4\.[13]\./.test(fhirVersion)) {
+            fhirPackage = 'hl7.fhir.r4b.core';
+          } else if (!fhirVersion.startsWith('4.0.')) {
+            fhirPackage = 'hl7.fhir.r5.core';
+          }
         }
-        // then, dive into the fhir core package
-        // default is to go with hl7.fhir.r4.core#version
-        try {
-          await workspace.fs.stat(Uri.file(path.join(packagePath, 'hl7.fhir.r4.core#4.0.1')));
-          packagePath = path.join(packagePath, 'hl7.fhir.r4.core#4.0.1');
-        } catch (err) {
-          // Couldn't dive into "hl7.fhir.r4.core#4.0.1". But that might be okay.
-        }
-        // then, one more dive, into the "package" directory
-        try {
-          await workspace.fs.stat(Uri.file(path.join(packagePath, 'package')));
-          packagePath = path.join(packagePath, 'package');
-        } catch (err) {
-          // Couldn't dive into "package". But that might be okay.
-        }
+        packagePath = path.join(
+          packagePath,
+          'packages',
+          `${fhirPackage}#${fhirVersion}`,
+          'package'
+        );
+        // check to make sure that the final package path actually exists
+        await workspace.fs.stat(Uri.file(packagePath));
       } catch (err) {
-        // if we're out here, the initial stat failed, which meant we couldn't stat the directory the user provided.
+        // if we're out here, the initial stat or final stat failed.
         // so, nothing we can do.
         throw new Error(`Couldn't load FHIR definitions from path: ${packagePath}`);
       }
