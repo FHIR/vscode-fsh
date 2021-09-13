@@ -87,14 +87,16 @@ export function activate(
     languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance)
   );
   commands.registerCommand('extension.openFhir', openFhirDocumentation);
-  completionProviderInstance.updateFhirEntities(
-    workspace.getConfiguration('fsh').get<string>('fhirCachePath')
-  );
+  completionProviderInstance.cachePath = workspace
+    .getConfiguration('fsh')
+    .get<string>('fhirCachePath');
+  completionProviderInstance.updateFhirEntities();
   workspace.onDidChangeConfiguration(event => {
     if (event.affectsConfiguration('fsh.fhirCachePath')) {
-      completionProviderInstance.updateFhirEntities(
-        workspace.getConfiguration('fsh').get<string>('fhirCachePath')
-      );
+      completionProviderInstance.cachePath = workspace
+        .getConfiguration('fsh')
+        .get<string>('fhirCachePath');
+      completionProviderInstance.updateFhirEntities();
     }
   });
   return { definitionProviderInstance, completionProviderInstance };

@@ -7,7 +7,9 @@ import {
   CompletionList,
   Range,
   workspace,
-  Uri
+  Uri,
+  window,
+  FileSystemWatcher
 } from 'vscode';
 import { EntityType, FshDefinitionProvider } from './FshDefinitionProvider';
 import YAML from 'yaml';
@@ -31,21 +33,33 @@ type DependencyDetails = {
 };
 
 type SushiConfiguration = {
-  fhirVersion: string | string[];
+  fhirVersion?: string | string[];
   dependencies?: {
     [key: string]: string | number | DependencyDetails;
   };
 };
 
+type EntitySet = {
+  resources: CompletionItem[];
+  extensions: CompletionItem[];
+  codeSystems: CompletionItem[];
+  valueSets: CompletionItem[];
+};
+
 export class FshCompletionProvider implements CompletionItemProvider {
   fhirEntities: {
-    resources: CompletionItem[];
-    extensions: CompletionItem[];
-    codeSystems: CompletionItem[];
-    valueSets: CompletionItem[];
-  } = { resources: [], extensions: [], codeSystems: [], valueSets: [] };
+    [key: string]: EntitySet;
+  };
+  cachePath: string;
+  // fsWatcher keeps an eye on the workspace for filesystem events
+  fsWatcher: FileSystemWatcher;
 
-  constructor(private definitionProvider: FshDefinitionProvider) {}
+  constructor(private definitionProvider: FshDefinitionProvider) {
+    this.fsWatcher = workspace.createFileSystemWatcher('sushi-config.{yaml,yml}');
+    this.fsWatcher.onDidChange(this.updateFhirEntities, this);
+    this.fsWatcher.onDidCreate(this.updateFhirEntities, this);
+    this.fsWatcher.onDidDelete(this.updateFhirEntities, this);
+  }
 
   public getAllowedTypesAndExtraNames(
     document: TextDocument,
@@ -113,79 +127,106 @@ export class FshCompletionProvider implements CompletionItemProvider {
     return { allowedTypes, extraNames };
   }
 
-  public async updateFhirEntities(cachePath: string): Promise<void> {
-    if (cachePath && path.isAbsolute(cachePath)) {
-      let packagePath = cachePath;
+  public async updateFhirEntities(): Promise<void[]> {
+    if (this.cachePath && path.isAbsolute(this.cachePath)) {
+      let fhirPackage = 'hl7.fhir.r4.core';
+      let fhirVersion = '4.0.1';
+      let parsedConfig: SushiConfiguration;
+      let parsedDependencies: { packageId: string; version: string }[] = [];
+      // first check if packagePath is valid. if not, give up right away
       try {
-        await workspace.fs.stat(Uri.file(packagePath));
-        // we expect this to be the path that ends in ".fhir"
-        // since we try to read the SUSHI config to get the FHIR version,
-        // we will be strict about this. this is to help avoid cases where a user
-        // inadvertantly sets the config to a specific FHIR version that doesn't
-        // match what their SUSHI config will use.
-        // if SUSHI config is in the workspace, check the fhirVersion there
-        const configFiles = await workspace.findFiles('sushi-config.{yaml,yml}');
-        // default is to go with hl7.fhir.r4.core#4.0.1
-        let fhirPackage = 'hl7.fhir.r4.core';
-        let fhirVersion = '4.0.1';
-        // const dependencies: string[] = [];
-        if (configFiles.length > 0) {
+        await workspace.fs.stat(Uri.file(this.cachePath));
+      } catch (err) {
+        throw new Error(`Couldn't load FHIR definitions from path: ${this.cachePath}`);
+      }
+      // then, see if we have a configuration. if so, use it to try to set the dependencies.
+      const configFiles = await workspace.findFiles('sushi-config.{yaml,yml}');
+      if (configFiles.length > 0) {
+        try {
           const configContents = await workspace.fs.readFile(configFiles[0]);
           const decoder = new TextDecoder();
           const decodedConfig = decoder.decode(configContents);
-          const parsedConfig: SushiConfiguration = YAML.parse(decodedConfig);
-          // try to get version: if there's more than one, use the first one that is recognized
+          parsedConfig = YAML.parse(decodedConfig);
+          // try to get fhirVersion: if there's more than one, use the first one that is recognized
           const listedVersions = Array.isArray(parsedConfig.fhirVersion)
             ? parsedConfig.fhirVersion
             : [parsedConfig.fhirVersion];
           fhirVersion = listedVersions
             .map(version => {
-              const versionMatch = version.match(/^#?(\S*)/);
+              const versionMatch = version?.match(/^#?(\S*)/);
               if (versionMatch) {
                 return versionMatch[1];
+              } else {
+                return null;
               }
             })
             .find(version => /current|4\.0\.1|4\.[1-9]\d*.\d+/.test(version));
           if (!fhirVersion) {
-            throw new Error('No valid FHIR versions in configuration.');
-          }
-          if (/^4\.[13]\./.test(fhirVersion)) {
+            fhirVersion = '4.0.1';
+          } else if (/^4\.[13]\./.test(fhirVersion)) {
             fhirPackage = 'hl7.fhir.r4b.core';
           } else if (!fhirVersion.startsWith('4.0.')) {
             fhirPackage = 'hl7.fhir.r5.core';
           }
+          // try to get dependencies: more or less doing SUSHI's importConfiguration.parseDependencies
+          if (parsedConfig.dependencies) {
+            parsedDependencies = Object.entries(parsedConfig.dependencies).map(
+              ([packageId, versionOrDetails]) => {
+                if (typeof versionOrDetails === 'string' || typeof versionOrDetails === 'number') {
+                  return { packageId, version: `${versionOrDetails}` };
+                } else if (versionOrDetails == null) {
+                  return { packageId, version: undefined };
+                } else {
+                  return {
+                    packageId,
+                    version: versionOrDetails.version ? `${versionOrDetails.version}` : undefined
+                  };
+                }
+              }
+            );
+          }
+        } catch (err) {
+          // there was a problem parsing the configuration. so, just ignore it, and hope we can find the default FHIR package.
         }
-        packagePath = path.join(
-          packagePath,
-          'packages',
-          `${fhirPackage}#${fhirVersion}`,
-          'package'
-        );
-        // check to make sure that the final package path actually exists
-        await workspace.fs.stat(Uri.file(packagePath));
-      } catch (err) {
-        // if we're out here, the initial stat or final stat failed.
-        // so, nothing we can do.
-        throw new Error(`Couldn't load FHIR definitions from path: ${packagePath}`);
       }
-      // then, we're done diving. we should have a file named .index.json, which will tell us what we want to know
-      try {
-        const fileContents = await workspace.fs.readFile(
-          Uri.file(path.join(packagePath, '.index.json'))
-        );
-        const decoder = new TextDecoder();
-        const decodedContents = decoder.decode(fileContents);
-        const parsedContents = JSON.parse(decodedContents) as PackageContents;
-        this.processPackageContents(parsedContents);
-      } catch (err) {
-        throw new Error("Couldn't read definition information from FHIR package.");
-      }
+      parsedDependencies.push({
+        packageId: fhirPackage,
+        version: fhirVersion
+      });
+      // then, try to actually process the index files for all those packages.
+      this.fhirEntities = {};
+      return Promise.all(
+        parsedDependencies.map(async dependency => {
+          try {
+            const indexPath = path.join(
+              this.cachePath,
+              'packages',
+              `${dependency.packageId}#${dependency.version}`,
+              'package',
+              '.index.json'
+            );
+            const indexContents = await workspace.fs.readFile(Uri.file(indexPath));
+            const decoder = new TextDecoder();
+            const decodedContents = decoder.decode(indexContents);
+            const parsedContents = JSON.parse(decodedContents) as PackageContents;
+            this.applyPackageContents(
+              parsedContents,
+              `${dependency.packageId}#${dependency.version}`
+            );
+          } catch (err) {
+            window.showInformationMessage(
+              `Could not load definition information for package ${dependency.packageId}#${dependency.version}`
+            );
+          }
+          return;
+        })
+      );
     }
   }
 
-  public processPackageContents(packageIndex: PackageContents): void {
+  public applyPackageContents(packageIndex: PackageContents, packageKey: string): void {
     if (packageIndex.files?.length) {
-      const updatedEntities: FshCompletionProvider['fhirEntities'] = {
+      const updatedEntities: EntitySet = {
         resources: [],
         extensions: [],
         codeSystems: [],
@@ -195,25 +236,25 @@ export class FshCompletionProvider implements CompletionItemProvider {
         if (entityInfo.resourceType === 'StructureDefinition') {
           if (entityInfo.type === 'Extension') {
             const item = new CompletionItem(entityInfo.id);
-            item.detail = 'FHIR Extension';
+            item.detail = `${packageKey} Extension`;
             updatedEntities.extensions.push(item);
           } else if (entityInfo.id === entityInfo.type) {
-            const item = new CompletionItem(entityInfo.id);
-            item.detail = 'FHIR Resource';
-            updatedEntities.resources.push(item);
             // This condition will succeed for FHIR types and resources, but fail for examples.
+            const item = new CompletionItem(entityInfo.id);
+            item.detail = `${packageKey} Resource`;
+            updatedEntities.resources.push(item);
           }
         } else if (entityInfo.resourceType === 'ValueSet') {
           const item = new CompletionItem(entityInfo.id);
-          item.detail = 'FHIR ValueSet';
+          item.detail = `${packageKey} ValueSet`;
           updatedEntities.valueSets.push(item);
         } else if (entityInfo.resourceType === 'CodeSystem') {
           const item = new CompletionItem(entityInfo.id);
-          item.detail = 'FHIR CodeSystem';
+          item.detail = `${packageKey} CodeSystem`;
           updatedEntities.codeSystems.push(item);
         }
       });
-      this.fhirEntities = updatedEntities;
+      this.fhirEntities[packageKey] = updatedEntities;
     }
   }
 
@@ -235,16 +276,24 @@ export class FshCompletionProvider implements CompletionItemProvider {
   public getFhirItems(allowedTypes: EntityType[]): CompletionItem[] {
     const fhirItems: CompletionItem[] = [];
     if (allowedTypes.includes('Resource')) {
-      fhirItems.push(...this.fhirEntities.resources);
+      Object.values(this.fhirEntities)
+        .map(fhirPackage => fhirPackage.resources)
+        .forEach(resources => fhirItems.push(...resources));
     }
     if (allowedTypes.includes('Extension')) {
-      fhirItems.push(...this.fhirEntities.extensions);
+      Object.values(this.fhirEntities)
+        .map(fhirPackage => fhirPackage.extensions)
+        .forEach(extensions => fhirItems.push(...extensions));
     }
     if (allowedTypes.includes('CodeSystem')) {
-      fhirItems.push(...this.fhirEntities.codeSystems);
+      Object.values(this.fhirEntities)
+        .map(fhirPackage => fhirPackage.codeSystems)
+        .forEach(codeSystems => fhirItems.push(...codeSystems));
     }
     if (allowedTypes.includes('ValueSet')) {
-      fhirItems.push(...this.fhirEntities.valueSets);
+      Object.values(this.fhirEntities)
+        .map(fhirPackage => fhirPackage.valueSets)
+        .forEach(valueSets => fhirItems.push(...valueSets));
     }
     return fhirItems;
   }
