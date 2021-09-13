@@ -291,12 +291,14 @@ suite('FshCompletionProvider', () => {
   suite('#getFhirItems', () => {
     before(() => {
       // set up a small set of FHIR items
+      const fhirProfiles = [new vscode.CompletionItem('some-profile')];
       const fhirResources = [new vscode.CompletionItem('Patient')];
       const fhirExtensions = [new vscode.CompletionItem('goal-reasonRejected')];
       const fhirCodeSystems = [new vscode.CompletionItem('composition-attestation-mode')];
       const fhirValueSets = [new vscode.CompletionItem('goal-start-event')];
       instance.fhirEntities = {
         'some.package': {
+          profiles: fhirProfiles,
           resources: fhirResources,
           extensions: fhirExtensions,
           codeSystems: fhirCodeSystems,
@@ -553,6 +555,15 @@ suite('FshCompletionProvider', () => {
             id: 'some-profile',
             url: 'http://hl7.org/fhir/StructureDefinition/some-profile',
             kind: 'resource',
+            type: 'SomeInterestingResource',
+            version: '1.2.3'
+          },
+          {
+            filename: 'Example-of-something.json',
+            resourceType: 'StructureDefinition',
+            id: 'example-of-something',
+            url: 'http://hl7.org/fhir/StructureDefinition/SomeInterestingResource/example',
+            kind: 'resource',
             type: 'SomeInterestingResource'
           },
           {
@@ -566,6 +577,8 @@ suite('FshCompletionProvider', () => {
         ]
       };
       instance.applyPackageContents(packageIndex, 'my.package');
+      const expectedProfile = new vscode.CompletionItem('some-profile');
+      expectedProfile.detail = 'my.package Profile';
       const expectedResource = new vscode.CompletionItem('SomeInterestingResource');
       expectedResource.detail = 'my.package Resource';
       const expectedExtension = new vscode.CompletionItem('useful-extension');
@@ -576,6 +589,7 @@ suite('FshCompletionProvider', () => {
       expectedValueSet.detail = 'my.package ValueSet';
       assert.deepEqual(instance.fhirEntities, {
         'my.package': {
+          profiles: [expectedProfile],
           resources: [expectedResource],
           extensions: [expectedExtension],
           codeSystems: [expectedCodeSystem],
@@ -586,12 +600,14 @@ suite('FshCompletionProvider', () => {
 
     test('should not change the existing FHIR entities when no files are provided', () => {
       // set up a small set of FHIR items
+      const fhirProfiles = [new vscode.CompletionItem('some-profile')];
       const fhirResources = [new vscode.CompletionItem('Patient')];
       const fhirExtensions = [new vscode.CompletionItem('goal-reasonRejected')];
       const fhirCodeSystems = [new vscode.CompletionItem('composition-attestation-mode')];
       const fhirValueSets = [new vscode.CompletionItem('goal-start-event')];
       instance.fhirEntities = {
         'my.package': {
+          profiles: fhirProfiles,
           resources: fhirResources,
           extensions: fhirExtensions,
           codeSystems: fhirCodeSystems,
@@ -601,6 +617,7 @@ suite('FshCompletionProvider', () => {
       instance.applyPackageContents({ files: [] }, 'some.other.package');
       assert.deepEqual(instance.fhirEntities, {
         'my.package': {
+          profiles: fhirProfiles,
           resources: fhirResources,
           extensions: fhirExtensions,
           codeSystems: fhirCodeSystems,

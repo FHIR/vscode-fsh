@@ -23,6 +23,7 @@ export type PackageContents = {
     url: string;
     type?: string;
     kind?: string;
+    version?: string;
   }[];
 };
 
@@ -40,6 +41,7 @@ type SushiConfiguration = {
 };
 
 type EntitySet = {
+  profiles: CompletionItem[];
   resources: CompletionItem[];
   extensions: CompletionItem[];
   codeSystems: CompletionItem[];
@@ -227,6 +229,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
   public applyPackageContents(packageIndex: PackageContents, packageKey: string): void {
     if (packageIndex.files?.length) {
       const updatedEntities: EntitySet = {
+        profiles: [],
         resources: [],
         extensions: [],
         codeSystems: [],
@@ -239,10 +242,17 @@ export class FshCompletionProvider implements CompletionItemProvider {
             item.detail = `${packageKey} Extension`;
             updatedEntities.extensions.push(item);
           } else if (entityInfo.id === entityInfo.type) {
-            // This condition will succeed for FHIR types and resources, but fail for examples.
+            // This condition will succeed for FHIR types and resources, but fail for profiles and examples.
             const item = new CompletionItem(entityInfo.id);
             item.detail = `${packageKey} Resource`;
             updatedEntities.resources.push(item);
+          } else if (entityInfo.version != null) {
+            // Most packages keep their examples in a separate place.
+            // But, FHIR core packages contain examples and profiles together.
+            // Profiles have versions, but examples don't.
+            const item = new CompletionItem(entityInfo.id);
+            item.detail = `${packageKey} Profile`;
+            updatedEntities.profiles.push(item);
           }
         } else if (entityInfo.resourceType === 'ValueSet') {
           const item = new CompletionItem(entityInfo.id);
