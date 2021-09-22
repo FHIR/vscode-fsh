@@ -238,31 +238,49 @@ export class FshCompletionProvider implements CompletionItemProvider {
                   const decoder = new TextDecoder();
                   const decodedContents = decoder.decode(rawContents);
                   const parsedContents = JSON.parse(decodedContents);
-                  const item = new CompletionItem(parsedContents.name ?? parsedContents.id);
+                  const items: CompletionItem[] = [];
+                  if (parsedContents.name) {
+                    items.push(new CompletionItem(parsedContents.name));
+                  }
+                  if (parsedContents.id && parsedContents.name !== parsedContents.id) {
+                    items.push(new CompletionItem(parsedContents.id));
+                  }
                   switch (this.determineEntityType(parsedContents)) {
                     case 'Profile':
-                      item.detail = `${dependency.packageId} Profile`;
-                      packageEntities.profiles.push(item);
+                      items.forEach(item => {
+                        item.detail = `${dependency.packageId} Profile`;
+                        packageEntities.profiles.push(item);
+                      });
                       break;
                     case 'Resource':
-                      item.detail = `${dependency.packageId} Resource`;
-                      packageEntities.resources.push(item);
+                      items.forEach(item => {
+                        item.detail = `${dependency.packageId} Resource`;
+                        packageEntities.resources.push(item);
+                      });
                       break;
                     case 'Extension':
-                      item.detail = `${dependency.packageId} Extension`;
-                      packageEntities.extensions.push(item);
+                      items.forEach(item => {
+                        item.detail = `${dependency.packageId} Extension`;
+                        packageEntities.extensions.push(item);
+                      });
                       break;
                     case 'Logical':
-                      item.detail = `${dependency.packageId} Logical`;
-                      packageEntities.logicals.push(item);
+                      items.forEach(item => {
+                        item.detail = `${dependency.packageId} Logical`;
+                        packageEntities.logicals.push(item);
+                      });
                       break;
                     case 'CodeSystem':
-                      item.detail = `${dependency.packageId} CodeSystem`;
-                      packageEntities.codeSystems.push(item);
+                      items.forEach(item => {
+                        item.detail = `${dependency.packageId} CodeSystem`;
+                        packageEntities.codeSystems.push(item);
+                      });
                       break;
                     case 'ValueSet':
-                      item.detail = `${dependency.packageId} ValueSet`;
-                      packageEntities.valueSets.push(item);
+                      items.forEach(item => {
+                        item.detail = `${dependency.packageId} ValueSet`;
+                        packageEntities.valueSets.push(item);
+                      });
                       break;
                   }
                 } catch (err) {
