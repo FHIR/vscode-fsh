@@ -9,22 +9,18 @@ import {
   workspace,
   Uri,
   window,
-  FileSystemWatcher
+  FileSystemWatcher,
+  FileType
 } from 'vscode';
 import { EntityType, FshDefinitionProvider } from './FshDefinitionProvider';
 import YAML from 'yaml';
 import path = require('path');
 
-export type PackageContents = {
-  files: {
-    filename: string;
-    resourceType: string;
-    id: string;
-    url: string;
-    type?: string;
-    kind?: string;
-    version?: string;
-  }[];
+export type FhirContents = {
+  resourceType: string;
+  type?: string;
+  kind?: string;
+  derivation?: string;
 };
 
 type DependencyDetails = {
@@ -44,6 +40,7 @@ type EntitySet = {
   profiles: CompletionItem[];
   resources: CompletionItem[];
   extensions: CompletionItem[];
+  logicals: CompletionItem[];
   codeSystems: CompletionItem[];
   valueSets: CompletionItem[];
 };
@@ -51,7 +48,7 @@ type EntitySet = {
 export class FshCompletionProvider implements CompletionItemProvider {
   fhirEntities: {
     [key: string]: EntitySet;
-  };
+  } = {};
   cachePath: string;
   // fsWatcher keeps an eye on the workspace for filesystem events
   fsWatcher: FileSystemWatcher;
@@ -129,7 +126,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
     return { allowedTypes, extraNames };
   }
 
-  public async updateFhirEntities(): Promise<void[]> {
+  public async updateFhirEntities(): Promise<void> {
     if (this.cachePath && path.isAbsolute(this.cachePath)) {
       let fhirPackage = 'hl7.fhir.r4.core';
       let fhirVersion = '4.0.1';
@@ -195,77 +192,125 @@ export class FshCompletionProvider implements CompletionItemProvider {
         packageId: fhirPackage,
         version: fhirVersion
       });
-      // then, try to actually process the index files for all those packages.
-      this.fhirEntities = {};
-      return Promise.all(
-        parsedDependencies.map(async dependency => {
-          try {
-            const indexPath = path.join(
-              this.cachePath,
-              'packages',
-              `${dependency.packageId}#${dependency.version}`,
-              'package',
-              '.index.json'
-            );
-            const indexContents = await workspace.fs.readFile(Uri.file(indexPath));
-            const decoder = new TextDecoder();
-            const decodedContents = decoder.decode(indexContents);
-            const parsedContents = JSON.parse(decodedContents) as PackageContents;
-            this.applyPackageContents(
-              parsedContents,
-              `${dependency.packageId}#${dependency.version}`
-            );
-          } catch (err) {
-            window.showInformationMessage(
-              `Could not load definition information for package ${dependency.packageId}#${dependency.version}`
-            );
-          }
-          return;
-        })
-      );
+      // then, try to actually process the resource files for all those packages.
+      this.fhirEntities = await this.makeItemsFromDependencies(parsedDependencies);
     }
   }
 
-  public applyPackageContents(packageIndex: PackageContents, packageKey: string): void {
-    if (packageIndex.files?.length) {
-      const updatedEntities: EntitySet = {
-        profiles: [],
-        resources: [],
-        extensions: [],
-        codeSystems: [],
-        valueSets: []
-      };
-      packageIndex.files.forEach(entityInfo => {
-        if (entityInfo.resourceType === 'StructureDefinition') {
-          if (entityInfo.type === 'Extension') {
-            const item = new CompletionItem(entityInfo.id);
-            item.detail = `${packageKey} Extension`;
-            updatedEntities.extensions.push(item);
-          } else if (entityInfo.id === entityInfo.type) {
-            // This condition will succeed for FHIR types and resources, but fail for profiles and examples.
-            const item = new CompletionItem(entityInfo.id);
-            item.detail = `${packageKey} Resource`;
-            updatedEntities.resources.push(item);
-          } else if (entityInfo.version != null) {
-            // Most packages keep their examples in a separate place.
-            // But, FHIR core packages contain examples and profiles together.
-            // Profiles have versions, but examples don't.
-            const item = new CompletionItem(entityInfo.id);
-            item.detail = `${packageKey} Profile`;
-            updatedEntities.profiles.push(item);
-          }
-        } else if (entityInfo.resourceType === 'ValueSet') {
-          const item = new CompletionItem(entityInfo.id);
-          item.detail = `${packageKey} ValueSet`;
-          updatedEntities.valueSets.push(item);
-        } else if (entityInfo.resourceType === 'CodeSystem') {
-          const item = new CompletionItem(entityInfo.id);
-          item.detail = `${packageKey} CodeSystem`;
-          updatedEntities.codeSystems.push(item);
+  public async makeItemsFromDependencies(
+    dependencies: { packageId: string; version: string }[]
+  ): Promise<FshCompletionProvider['fhirEntities']> {
+    const updatedEntities: FshCompletionProvider['fhirEntities'] = {};
+    await Promise.all(
+      dependencies.map(async dependency => {
+        const packageKey = `${dependency.packageId}#${dependency.version}`;
+        if (this.fhirEntities[packageKey]) {
+          // we already have it. assume it doesn't need to be reloaded
+          updatedEntities[packageKey] = this.fhirEntities[packageKey];
+          return;
         }
-      });
-      this.fhirEntities[packageKey] = updatedEntities;
+        try {
+          // for each json file in the package, open it up and see if it's something we can use.
+          // there are naming conventions, but there's no need to rely on those.
+          // we use a similar decision scheme to SUSHI's FHIRDefinitions.add() method.
+          const packagePath = path.join(
+            this.cachePath,
+            'packages',
+            `${dependency.packageId}#${dependency.version}`,
+            'package'
+          );
+          const packageFiles = await workspace.fs.readDirectory(Uri.file(packagePath));
+          const packageEntities: EntitySet = {
+            profiles: [],
+            resources: [],
+            extensions: [],
+            logicals: [],
+            codeSystems: [],
+            valueSets: []
+          };
+          await Promise.all(
+            packageFiles.map(async ([fileName, type]) => {
+              if (type == FileType.File && fileName.endsWith('.json')) {
+                try {
+                  const rawContents = await workspace.fs.readFile(
+                    Uri.file(path.join(packagePath, fileName))
+                  );
+                  const decoder = new TextDecoder();
+                  const decodedContents = decoder.decode(rawContents);
+                  const parsedContents = JSON.parse(decodedContents);
+                  const item = new CompletionItem(parsedContents.name ?? parsedContents.id);
+                  switch (this.determineEntityType(parsedContents)) {
+                    case 'Profile':
+                      item.detail = `${dependency.packageId} Profile`;
+                      packageEntities.profiles.push(item);
+                      break;
+                    case 'Resource':
+                      item.detail = `${dependency.packageId} Resource`;
+                      packageEntities.resources.push(item);
+                      break;
+                    case 'Extension':
+                      item.detail = `${dependency.packageId} Extension`;
+                      packageEntities.extensions.push(item);
+                      break;
+                    case 'Logical':
+                      item.detail = `${dependency.packageId} Logical`;
+                      packageEntities.logicals.push(item);
+                      break;
+                    case 'CodeSystem':
+                      item.detail = `${dependency.packageId} CodeSystem`;
+                      packageEntities.codeSystems.push(item);
+                      break;
+                    case 'ValueSet':
+                      item.detail = `${dependency.packageId} ValueSet`;
+                      packageEntities.valueSets.push(item);
+                      break;
+                  }
+                } catch (err) {
+                  // it might be unparseable JSON, or a file may have been removed between
+                  // readDirectory and readFile. either way, it's okay. just keep going.
+                }
+              }
+            })
+          );
+          updatedEntities[packageKey] = packageEntities;
+        } catch (err) {
+          window.showInformationMessage(
+            `Could not load definition information for package ${dependency.packageId}#${dependency.version}`
+          );
+        }
+        return;
+      })
+    );
+    return updatedEntities;
+  }
+
+  public determineEntityType(fhirJson: FhirContents): EntityType {
+    if (fhirJson.resourceType === 'StructureDefinition') {
+      if (fhirJson.type === 'Extension') {
+        return 'Extension';
+      } else if (fhirJson.kind === 'logical') {
+        if (fhirJson.derivation === 'specialization') {
+          return 'Logical';
+        } else {
+          return 'Profile';
+        }
+      } else if (
+        ['resource', 'primitive-type', 'complex-type', 'datatype'].includes(fhirJson.kind)
+      ) {
+        if (fhirJson.derivation === 'constraint') {
+          return 'Profile';
+        } else {
+          // strictly speaking, some of the values for kind represent Types,
+          // but for autocomplete purposes, we can treat them as resources.
+          return 'Resource';
+        }
+      }
+    } else if (fhirJson.resourceType === 'CodeSystem') {
+      return 'CodeSystem';
+    } else if (fhirJson.resourceType === 'ValueSet') {
+      return 'ValueSet';
     }
+    return null;
   }
 
   public getEntityItems(allowedTypes: EntityType[]): CompletionItem[] {
@@ -285,6 +330,11 @@ export class FshCompletionProvider implements CompletionItemProvider {
 
   public getFhirItems(allowedTypes: EntityType[]): CompletionItem[] {
     const fhirItems: CompletionItem[] = [];
+    if (allowedTypes.includes('Profile')) {
+      Object.values(this.fhirEntities)
+        .map(fhirPackage => fhirPackage.profiles)
+        .forEach(profiles => fhirItems.push(...profiles));
+    }
     if (allowedTypes.includes('Resource')) {
       Object.values(this.fhirEntities)
         .map(fhirPackage => fhirPackage.resources)
@@ -294,6 +344,11 @@ export class FshCompletionProvider implements CompletionItemProvider {
       Object.values(this.fhirEntities)
         .map(fhirPackage => fhirPackage.extensions)
         .forEach(extensions => fhirItems.push(...extensions));
+    }
+    if (allowedTypes.includes('Logical')) {
+      Object.values(this.fhirEntities)
+        .map(fhirPackage => fhirPackage.logicals)
+        .forEach(logicals => fhirItems.push(...logicals));
     }
     if (allowedTypes.includes('CodeSystem')) {
       Object.values(this.fhirEntities)

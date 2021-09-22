@@ -4,7 +4,7 @@ import { before, afterEach } from 'mocha';
 import * as vscode from 'vscode';
 import path from 'path';
 import { EOL } from 'os';
-import { FshCompletionProvider, PackageContents } from '../../FshCompletionProvider';
+import { FshCompletionProvider } from '../../FshCompletionProvider';
 
 chai.use(spies);
 const { assert, expect } = chai;
@@ -301,6 +301,7 @@ suite('FshCompletionProvider', () => {
           profiles: fhirProfiles,
           resources: fhirResources,
           extensions: fhirExtensions,
+          logicals: [],
           codeSystems: fhirCodeSystems,
           valueSets: fhirValueSets
         }
@@ -342,24 +343,17 @@ suite('FshCompletionProvider', () => {
         await vscode.workspace.fs.delete(configFile);
       }
       instance.cachePath = vscode.workspace.getConfiguration('fsh').get<string>('fhirCachePath');
+      instance.fhirEntities = {};
       chai.spy.restore();
     });
 
-    test('should update from a package index from the default FHIR version when there is no SUSHI config', async () => {
-      const processSpy = chai.spy.on(instance, 'applyPackageContents');
+    test('should update from the default FHIR version when there is no SUSHI config', async () => {
       instance.cachePath = path.join(TEST_ROOT, '.fhir');
       await instance.updateFhirEntities();
-      expect(processSpy).to.have.been.called.exactly(1);
-      expect(processSpy).to.have.been.called.with.exactly(
-        {
-          comment: 'This is the index file for FHIR version 4.0.1.',
-          files: []
-        },
-        'hl7.fhir.r4.core#4.0.1'
-      );
+      assert.hasAllKeys(instance.fhirEntities, ['hl7.fhir.r4.core#4.0.1']);
     });
 
-    test('should update from a package index from the specified version of hl7.fhir.r4b.core when there is a SUSHI config', async () => {
+    test('should update from the specified version of hl7.fhir.r4b.core when there is a SUSHI config', async () => {
       // create sushi-config.yaml with fhirVersion: 4.3.0
       const configContents = defaultConfig.replace('4.0.1', '4.3.0');
       const configPath = path.join(
@@ -368,20 +362,12 @@ suite('FshCompletionProvider', () => {
       );
       await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
       // update entities using specified version
-      const processSpy = chai.spy.on(instance, 'applyPackageContents');
       instance.cachePath = path.join(TEST_ROOT, '.fhir');
       await instance.updateFhirEntities();
-      expect(processSpy).to.have.been.called.exactly(1);
-      expect(processSpy).to.have.been.called.with.exactly(
-        {
-          comment: 'This is the index file for FHIR version 4.3.0.',
-          files: []
-        },
-        'hl7.fhir.r4b.core#4.3.0'
-      );
+      assert.hasAllKeys(instance.fhirEntities, ['hl7.fhir.r4b.core#4.3.0']);
     });
 
-    test('should update from a package index from the specified version of hl7.fhir.r5.core when there is a SUSHI config', async () => {
+    test('should update from the specified version of hl7.fhir.r5.core when there is a SUSHI config', async () => {
       // create sushi-config.yml with fhirVersion: 4.8.2
       const configContents = defaultConfig.replace('4.0.1', '4.8.2');
       const configPath = path.join(
@@ -390,17 +376,9 @@ suite('FshCompletionProvider', () => {
       );
       await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
       // update entities using specified version
-      const processSpy = chai.spy.on(instance, 'applyPackageContents');
       instance.cachePath = path.join(TEST_ROOT, '.fhir');
       await instance.updateFhirEntities();
-      expect(processSpy).to.have.been.called.exactly(1);
-      expect(processSpy).to.have.been.called.with.exactly(
-        {
-          comment: 'This is the index file for FHIR version 4.8.2.',
-          files: []
-        },
-        'hl7.fhir.r5.core#4.8.2'
-      );
+      assert.hasAllKeys(instance.fhirEntities, ['hl7.fhir.r5.core#4.8.2']);
     });
 
     test('should show an information message when a SUSHI config exists, but specifies a FHIR version not present in the cache', async () => {
@@ -412,17 +390,16 @@ suite('FshCompletionProvider', () => {
       );
       await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
       // update entities using specified version
-      const processSpy = chai.spy.on(instance, 'applyPackageContents');
       const messageSpy = chai.spy.on(vscode.window, 'showInformationMessage');
       instance.cachePath = path.join(TEST_ROOT, '.fhir');
       await instance.updateFhirEntities();
-      expect(processSpy).to.have.been.called.exactly(0);
+      assert.lengthOf(Object.keys(instance.fhirEntities), 0);
       expect(messageSpy).to.have.been.called.with(
         'Could not load definition information for package hl7.fhir.r5.core#4.7.3'
       );
     });
 
-    test('should update from a package index for each specified dependency that is present in the cache', async () => {
+    test('should update from each specified dependency that is present in the cache', async () => {
       // create sushi-config.yml with dependencies:
       //   another.good.package: current
       //   some.other.package:
@@ -445,46 +422,27 @@ suite('FshCompletionProvider', () => {
       );
       await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
       // update entities using specified version
-      const processSpy = chai.spy.on(instance, 'applyPackageContents');
       const messageSpy = chai.spy.on(vscode.window, 'showInformationMessage');
       instance.cachePath = path.join(TEST_ROOT, '.fhir');
       await instance.updateFhirEntities();
-      expect(processSpy).to.have.been.called.exactly(3);
-      expect(processSpy).to.have.been.called.with.exactly(
-        {
-          comment: 'This is the index file for FHIR version 4.0.1.',
-          files: []
-        },
-        'hl7.fhir.r4.core#4.0.1'
-      );
-      expect(processSpy).to.have.been.called.with.exactly(
-        {
-          comment: 'This is the index file for Another Good Package, current version.',
-          files: []
-        },
-        'another.good.package#current'
-      );
-      expect(processSpy).to.have.been.called.with.exactly(
-        {
-          comment: 'This is the index file for Some Other Package version 1.0.1.',
-          files: []
-        },
+      assert.hasAllKeys(instance.fhirEntities, [
+        'hl7.fhir.r4.core#4.0.1',
+        'another.good.package#current',
         'some.other.package#1.0.1'
-      );
+      ]);
       expect(messageSpy).to.have.been.called.with(
         'Could not load definition information for package not.this.one#2.0.5'
       );
     });
 
     test('should not update anything when the cache path is null', async () => {
-      const processSpy = chai.spy.on(instance, 'applyPackageContents');
       instance.cachePath = null;
+      const previousEntities = instance.fhirEntities;
       await instance.updateFhirEntities();
-      expect(processSpy).to.have.been.called.exactly(0);
+      assert.equal(previousEntities, instance.fhirEntities);
     });
 
     test('should throw an error when the cache path does not exist', async () => {
-      const processSpy = chai.spy.on(instance, 'applyPackageContents');
       try {
         instance.cachePath = path.join(__dirname, 'nonsense', 'path');
         await instance.updateFhirEntities();
@@ -492,138 +450,145 @@ suite('FshCompletionProvider', () => {
       } catch (err) {
         assert.match(err, /Couldn't load FHIR definitions from path/);
       }
-      expect(processSpy).to.have.been.called.exactly(0);
-    });
-
-    test('should show an information message when the cache path exists, but the package index is not found', async () => {
-      const processSpy = chai.spy.on(instance, 'applyPackageContents');
-      const messageSpy = chai.spy.on(vscode.window, 'showInformationMessage');
-      instance.cachePath = path.join(TEST_ROOT, '.fhir-no-index');
-      await instance.updateFhirEntities();
-      expect(processSpy).to.have.been.called.exactly(0);
-      expect(messageSpy).to.have.been.called.with(
-        'Could not load definition information for package hl7.fhir.r4.core#4.0.1'
-      );
-    });
-
-    test('should show an information message when the cache path exists, but the package index is not valid JSON', async () => {
-      const processSpy = chai.spy.on(instance, 'applyPackageContents');
-      const messageSpy = chai.spy.on(vscode.window, 'showInformationMessage');
-      instance.cachePath = path.join(TEST_ROOT, '.fhir-not-json');
-      await instance.updateFhirEntities();
-      expect(processSpy).to.have.been.called.exactly(0);
-      expect(messageSpy).to.have.been.called.with(
-        'Could not load definition information for package hl7.fhir.r4.core#4.0.1'
-      );
     });
   });
 
-  suite('#applyPackageContents', () => {
-    test('should set the FHIR entities based on their attributes', () => {
-      const packageIndex: PackageContents = {
-        files: [
-          {
-            filename: 'ValueSet-some-value-set.json',
-            resourceType: 'ValueSet',
-            id: 'some-value-set',
-            url: 'http://hl7.org/fhir/ValueSet/some-value-set'
-          },
-          {
-            filename: 'SearchParameter-SomeInterestingResource-feature.json',
-            resourceType: 'SearchParameter',
-            id: 'SomeInterestingResource-feature',
-            url: 'http://hl7.org/fhir/SearchParameter/SomeInterestingResource-feature',
-            type: 'token'
-          },
-          {
-            filename: 'CodeSystem-some-code-system.json',
-            resourceType: 'CodeSystem',
-            id: 'some-code-system',
-            url: 'http://terminology.hl7.org/CodeSystem/some-code-system'
-          },
-          {
-            filename: 'StructureDefinition-SomeInterestingResource.json',
-            resourceType: 'StructureDefinition',
-            id: 'SomeInterestingResource',
-            url: 'http://hl7.org/fhir/StructureDefinition/SomeInterestingResource',
-            kind: 'resource',
-            type: 'SomeInterestingResource'
-          },
-          {
-            filename: 'StructureDefinition-some-profile.json',
-            resourceType: 'StructureDefinition',
-            id: 'some-profile',
-            url: 'http://hl7.org/fhir/StructureDefinition/some-profile',
-            kind: 'resource',
-            type: 'SomeInterestingResource',
-            version: '1.2.3'
-          },
-          {
-            filename: 'Example-of-something.json',
-            resourceType: 'StructureDefinition',
-            id: 'example-of-something',
-            url: 'http://hl7.org/fhir/StructureDefinition/SomeInterestingResource/example',
-            kind: 'resource',
-            type: 'SomeInterestingResource'
-          },
-          {
-            filename: 'StructureDefinition-useful-extension.json',
-            resourceType: 'StructureDefinition',
-            id: 'useful-extension',
-            url: 'http://hl7.org/fhir/StructureDefinition/useful-extension',
-            kind: 'complex-type',
-            type: 'Extension'
-          }
-        ]
-      };
-      instance.applyPackageContents(packageIndex, 'my.package');
-      const expectedProfile = new vscode.CompletionItem('some-profile');
-      expectedProfile.detail = 'my.package Profile';
-      const expectedResource = new vscode.CompletionItem('SomeInterestingResource');
-      expectedResource.detail = 'my.package Resource';
-      const expectedExtension = new vscode.CompletionItem('useful-extension');
-      expectedExtension.detail = 'my.package Extension';
-      const expectedCodeSystem = new vscode.CompletionItem('some-code-system');
-      expectedCodeSystem.detail = 'my.package CodeSystem';
-      const expectedValueSet = new vscode.CompletionItem('some-value-set');
-      expectedValueSet.detail = 'my.package ValueSet';
-      assert.deepEqual(instance.fhirEntities, {
-        'my.package': {
-          profiles: [expectedProfile],
-          resources: [expectedResource],
-          extensions: [expectedExtension],
-          codeSystems: [expectedCodeSystem],
-          valueSets: [expectedValueSet]
+  suite('#makeItemsFromDependencies', () => {
+    test('should create items based on the files in the specified packages', async () => {
+      instance.fhirEntities = {};
+      const dependencies = [
+        {
+          packageId: 'some.other.package',
+          version: '1.0.1'
+        },
+        {
+          packageId: 'hl7.fhir.r4.core',
+          version: '4.0.1'
         }
-      });
+      ];
+      instance.cachePath = path.join(TEST_ROOT, '.fhir');
+      const items = await instance.makeItemsFromDependencies(dependencies);
+      assert.hasAllKeys(items, ['some.other.package#1.0.1', 'hl7.fhir.r4.core#4.0.1']);
+
+      const expectedProfile = new vscode.CompletionItem('MyProfile');
+      expectedProfile.detail = 'some.other.package Profile';
+      const expectedResource = new vscode.CompletionItem('MyResource');
+      expectedResource.detail = 'hl7.fhir.r4.core Resource';
+      const expectedExtension = new vscode.CompletionItem('MyExtension');
+      expectedExtension.detail = 'some.other.package Extension';
+      const expectedLogical = new vscode.CompletionItem('MyLogical');
+      expectedLogical.detail = 'some.other.package Logical';
+      const expectedCodeSystem = new vscode.CompletionItem('MyCodeSystem');
+      expectedCodeSystem.detail = 'hl7.fhir.r4.core CodeSystem';
+      const expectedValueSet = new vscode.CompletionItem('my-value-set');
+      expectedValueSet.detail = 'hl7.fhir.r4.core ValueSet';
+      assert.deepInclude(items['some.other.package#1.0.1'].profiles, expectedProfile);
+      assert.deepInclude(items['hl7.fhir.r4.core#4.0.1'].resources, expectedResource);
+      assert.deepInclude(items['some.other.package#1.0.1'].extensions, expectedExtension);
+      assert.deepInclude(items['some.other.package#1.0.1'].logicals, expectedLogical);
+      assert.deepInclude(items['hl7.fhir.r4.core#4.0.1'].codeSystems, expectedCodeSystem);
+      assert.deepInclude(items['hl7.fhir.r4.core#4.0.1'].valueSets, expectedValueSet);
+    });
+  });
+
+  suite('#determineEntityType', () => {
+    test('should identify a profile of a resource as a Profile', () => {
+      const fhirJson = {
+        resourceType: 'StructureDefinition',
+        type: 'MyResource',
+        kind: 'resource',
+        derivation: 'constraint',
+        name: 'MyProfile'
+      };
+      const result = instance.determineEntityType(fhirJson);
+      assert.equal(result, 'Profile');
     });
 
-    test('should not change the existing FHIR entities when no files are provided', () => {
-      // set up a small set of FHIR items
-      const fhirProfiles = [new vscode.CompletionItem('some-profile')];
-      const fhirResources = [new vscode.CompletionItem('Patient')];
-      const fhirExtensions = [new vscode.CompletionItem('goal-reasonRejected')];
-      const fhirCodeSystems = [new vscode.CompletionItem('composition-attestation-mode')];
-      const fhirValueSets = [new vscode.CompletionItem('goal-start-event')];
-      instance.fhirEntities = {
-        'my.package': {
-          profiles: fhirProfiles,
-          resources: fhirResources,
-          extensions: fhirExtensions,
-          codeSystems: fhirCodeSystems,
-          valueSets: fhirValueSets
-        }
+    test('should identify a profile of a logical as a Profile', () => {
+      const fhirJson = {
+        resourceType: 'StructureDefinition',
+        type: 'MyLogical',
+        kind: 'logical',
+        derivation: 'constraint',
+        name: 'MyProfile'
       };
-      instance.applyPackageContents({ files: [] }, 'some.other.package');
-      assert.deepEqual(instance.fhirEntities, {
-        'my.package': {
-          profiles: fhirProfiles,
-          resources: fhirResources,
-          extensions: fhirExtensions,
-          codeSystems: fhirCodeSystems,
-          valueSets: fhirValueSets
-        }
-      });
+      const result = instance.determineEntityType(fhirJson);
+      assert.equal(result, 'Profile');
+    });
+
+    test('should identify a Resource', () => {
+      const fhirJson = {
+        resourceType: 'StructureDefinition',
+        type: 'MyResource',
+        kind: 'resource',
+        derivation: 'specialization',
+        name: 'MyResource'
+      };
+      const result = instance.determineEntityType(fhirJson);
+      assert.equal(result, 'Resource');
+    });
+
+    test('should identify a FHIR complex type as Resource', () => {
+      const fhirJson = {
+        resourceType: 'StructureDefinition',
+        type: 'MyComplexType',
+        kind: 'complex-type',
+        derivation: 'specialization',
+        name: 'MyComplexType'
+      };
+      const result = instance.determineEntityType(fhirJson);
+      assert.equal(result, 'Resource');
+    });
+
+    test('should identify an Extension', () => {
+      const fhirJson = {
+        resourceType: 'StructureDefinition',
+        type: 'Extension',
+        kind: 'complex-type',
+        name: 'MyExtension'
+      };
+      const result = instance.determineEntityType(fhirJson);
+      assert.equal(result, 'Extension');
+    });
+
+    test('should identify a Logical', () => {
+      const fhirJson = {
+        resourceType: 'StructureDefinition',
+        kind: 'logical',
+        derivation: 'specialization',
+        name: 'MyLogical'
+      };
+      const result = instance.determineEntityType(fhirJson);
+      assert.equal(result, 'Logical');
+    });
+
+    test('should identify a CodeSystem', () => {
+      const fhirJson = {
+        resourceType: 'CodeSystem',
+        name: 'MyCodeSystem'
+      };
+      const result = instance.determineEntityType(fhirJson);
+      assert.equal(result, 'CodeSystem');
+    });
+
+    test('should identify a ValueSet', () => {
+      const fhirJson = {
+        resourceType: 'ValueSet',
+        name: 'MyValueSet'
+      };
+      const result = instance.determineEntityType(fhirJson);
+      assert.equal(result, 'ValueSet');
+    });
+
+    test('should return null when the entity is not one of the applicable entity types', () => {
+      // for example, a SearchParameter is not one of the applicable entity types.
+      const fhirJson = {
+        resourceType: 'SearchParameter',
+        name: 'MySearchParameter',
+        type: 'reference'
+      };
+      const result = instance.determineEntityType(fhirJson);
+      assert.isNull(result);
     });
   });
 });
