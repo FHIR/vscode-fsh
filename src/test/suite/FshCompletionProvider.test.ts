@@ -1,13 +1,15 @@
 import chai from 'chai';
 import spies from 'chai-spies';
-import { before, afterEach } from 'mocha';
+import { before, beforeEach, afterEach } from 'mocha';
 import * as vscode from 'vscode';
 import path from 'path';
-import { EOL } from 'os';
+import os from 'os';
+
 import { FshCompletionProvider } from '../../FshCompletionProvider';
 
 chai.use(spies);
 const { assert, expect } = chai;
+const { EOL } = os;
 
 // Since the tests actually run from the build output directory,
 // use this path to help find the FHIR caches we use.
@@ -342,13 +344,13 @@ suite('FshCompletionProvider', () => {
       for (const configFile of configFiles) {
         await vscode.workspace.fs.delete(configFile);
       }
-      instance.cachePath = vscode.workspace.getConfiguration('fsh').get<string>('fhirCachePath');
+      instance.cachePath = path.join(os.homedir(), '.fhir', 'packages');
       instance.fhirEntities = {};
       chai.spy.restore();
     });
 
     test('should update from the default FHIR version when there is no SUSHI config', async () => {
-      instance.cachePath = path.join(TEST_ROOT, '.fhir');
+      instance.cachePath = path.join(TEST_ROOT, '.fhir', 'packages');
       await instance.updateFhirEntities();
       assert.hasAllKeys(instance.fhirEntities, ['hl7.fhir.r4.core#4.0.1']);
     });
@@ -362,7 +364,7 @@ suite('FshCompletionProvider', () => {
       );
       await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
       // update entities using specified version
-      instance.cachePath = path.join(TEST_ROOT, '.fhir');
+      instance.cachePath = path.join(TEST_ROOT, '.fhir', 'packages');
       await instance.updateFhirEntities();
       assert.hasAllKeys(instance.fhirEntities, ['hl7.fhir.r4b.core#4.3.0']);
     });
@@ -376,7 +378,7 @@ suite('FshCompletionProvider', () => {
       );
       await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
       // update entities using specified version
-      instance.cachePath = path.join(TEST_ROOT, '.fhir');
+      instance.cachePath = path.join(TEST_ROOT, '.fhir', 'packages');
       await instance.updateFhirEntities();
       assert.hasAllKeys(instance.fhirEntities, ['hl7.fhir.r5.core#4.8.2']);
     });
@@ -391,7 +393,7 @@ suite('FshCompletionProvider', () => {
       await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
       // update entities using specified version
       const messageSpy = chai.spy.on(vscode.window, 'showInformationMessage');
-      instance.cachePath = path.join(TEST_ROOT, '.fhir');
+      instance.cachePath = path.join(TEST_ROOT, '.fhir', 'packages');
       await instance.updateFhirEntities();
       assert.lengthOf(Object.keys(instance.fhirEntities), 0);
       expect(messageSpy).to.have.been.called.with(
@@ -423,7 +425,7 @@ suite('FshCompletionProvider', () => {
       await vscode.workspace.fs.writeFile(vscode.Uri.file(configPath), Buffer.from(configContents));
       // update entities using specified version
       const messageSpy = chai.spy.on(vscode.window, 'showInformationMessage');
-      instance.cachePath = path.join(TEST_ROOT, '.fhir');
+      instance.cachePath = path.join(TEST_ROOT, '.fhir', 'packages');
       await instance.updateFhirEntities();
       assert.hasAllKeys(instance.fhirEntities, [
         'hl7.fhir.r4.core#4.0.1',
@@ -454,8 +456,16 @@ suite('FshCompletionProvider', () => {
   });
 
   suite('#makeItemsFromDependencies', () => {
-    test('should create items based on the files in the specified packages', async () => {
+    beforeEach(() => {
       instance.fhirEntities = {};
+      instance.cachedFhirEntities = {};
+    });
+
+    afterEach(() => {
+      chai.spy.restore();
+    });
+
+    test('should create items and add them to the cache based on the files in the specified packages', async () => {
       const dependencies = [
         {
           packageId: 'some.other.package',
@@ -466,7 +476,7 @@ suite('FshCompletionProvider', () => {
           version: '4.0.1'
         }
       ];
-      instance.cachePath = path.join(TEST_ROOT, '.fhir');
+      instance.cachePath = path.join(TEST_ROOT, '.fhir', 'packages');
       const items = await instance.makeItemsFromDependencies(dependencies);
       assert.hasAllKeys(items, ['some.other.package#1.0.1', 'hl7.fhir.r4.core#4.0.1']);
 
@@ -484,6 +494,7 @@ suite('FshCompletionProvider', () => {
       expectedIdCodeSystem.detail = 'hl7.fhir.r4.core CodeSystem';
       const expectedValueSet = new vscode.CompletionItem('my-value-set');
       expectedValueSet.detail = 'hl7.fhir.r4.core ValueSet';
+
       assert.lengthOf(items['some.other.package#1.0.1'].profiles, 1);
       assert.deepInclude(items['some.other.package#1.0.1'].profiles, expectedProfile);
       assert.lengthOf(items['hl7.fhir.r4.core#4.0.1'].resources, 1);
@@ -497,6 +508,73 @@ suite('FshCompletionProvider', () => {
       assert.deepInclude(items['hl7.fhir.r4.core#4.0.1'].codeSystems, expectedIdCodeSystem);
       assert.lengthOf(items['hl7.fhir.r4.core#4.0.1'].valueSets, 1);
       assert.deepInclude(items['hl7.fhir.r4.core#4.0.1'].valueSets, expectedValueSet);
+
+      assert.lengthOf(instance.cachedFhirEntities['some.other.package#1.0.1'].profiles, 1);
+      assert.deepInclude(
+        instance.cachedFhirEntities['some.other.package#1.0.1'].profiles,
+        expectedProfile
+      );
+      assert.lengthOf(instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].resources, 1);
+      assert.deepInclude(
+        instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].resources,
+        expectedResource
+      );
+      assert.lengthOf(instance.cachedFhirEntities['some.other.package#1.0.1'].extensions, 1);
+      assert.deepInclude(
+        instance.cachedFhirEntities['some.other.package#1.0.1'].extensions,
+        expectedExtension
+      );
+      assert.lengthOf(instance.cachedFhirEntities['some.other.package#1.0.1'].logicals, 1);
+      assert.deepInclude(
+        instance.cachedFhirEntities['some.other.package#1.0.1'].logicals,
+        expectedLogical
+      );
+      assert.lengthOf(instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].codeSystems, 2);
+      assert.deepInclude(
+        instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].codeSystems,
+        expectedNameCodeSystem
+      );
+      assert.deepInclude(
+        instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].codeSystems,
+        expectedIdCodeSystem
+      );
+      assert.lengthOf(instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].valueSets, 1);
+      assert.deepInclude(
+        instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].valueSets,
+        expectedValueSet
+      );
+    });
+
+    test('should use items from the cache when possible', async () => {
+      const readFileSpy = chai.spy.on(vscode.workspace.fs, 'readFile');
+      const dependencies = [
+        {
+          packageId: 'very.good.package',
+          version: '1.0.1'
+        }
+      ];
+      instance.cachedFhirEntities['very.good.package#1.0.1'] = {
+        profiles: [new vscode.CompletionItem('SomeProfile')],
+        resources: [],
+        extensions: [],
+        logicals: [
+          new vscode.CompletionItem('LogicalOne'),
+          new vscode.CompletionItem('LogicalTwo'),
+          new vscode.CompletionItem('LogicalThree')
+        ],
+        codeSystems: [],
+        valueSets: []
+      };
+      const items = await instance.makeItemsFromDependencies(dependencies);
+      assert.hasAllKeys(items, ['very.good.package#1.0.1']);
+      assert.lengthOf(items['very.good.package#1.0.1'].profiles, 1);
+      assert.lengthOf(items['very.good.package#1.0.1'].resources, 0);
+      assert.lengthOf(items['very.good.package#1.0.1'].extensions, 0);
+      assert.lengthOf(items['very.good.package#1.0.1'].logicals, 3);
+      assert.lengthOf(items['very.good.package#1.0.1'].codeSystems, 0);
+      assert.lengthOf(items['very.good.package#1.0.1'].valueSets, 0);
+      // since we got these items from the cache, we shouldn't have read any files
+      expect(readFileSpy).to.have.been.called.exactly(0);
     });
   });
 

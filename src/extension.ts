@@ -7,8 +7,7 @@ import {
   TextDocument,
   Position,
   env,
-  Uri,
-  workspace
+  Uri
 } from 'vscode';
 
 import axios from 'axios';
@@ -87,18 +86,7 @@ export function activate(
     languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance)
   );
   commands.registerCommand('extension.openFhir', openFhirDocumentation);
-  completionProviderInstance.cachePath = workspace
-    .getConfiguration('fsh')
-    .get<string>('fhirCachePath');
   completionProviderInstance.updateFhirEntities();
-  workspace.onDidChangeConfiguration(event => {
-    if (event.affectsConfiguration('fsh.fhirCachePath')) {
-      completionProviderInstance.cachePath = workspace
-        .getConfiguration('fsh')
-        .get<string>('fhirCachePath');
-      completionProviderInstance.updateFhirEntities();
-    }
-  });
   return { definitionProviderInstance, completionProviderInstance };
 }
 

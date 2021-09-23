@@ -62,19 +62,6 @@
                     "when": "editorLangId == fsh"
                 }
             ]
-        },
-        "configuration": {
-            "title": "FHIR Shorthand",
-            "properties": {
-                "fsh.fhirCachePath": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "default": null,
-                    "description": "Specifies the absolute path to the FHIR cache. This is typically a directory named `.fhir`."
-                }
-            }
         }
     },
     "scripts": {

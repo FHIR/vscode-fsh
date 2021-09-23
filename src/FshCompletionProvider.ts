@@ -14,7 +14,8 @@ import {
 } from 'vscode';
 import { EntityType, FshDefinitionProvider } from './FshDefinitionProvider';
 import YAML from 'yaml';
-import path = require('path');
+import path from 'path';
+import os from 'os';
 
 export type FhirContents = {
   resourceType: string;
@@ -49,11 +50,15 @@ export class FshCompletionProvider implements CompletionItemProvider {
   fhirEntities: {
     [key: string]: EntitySet;
   } = {};
+  cachedFhirEntities: {
+    [key: string]: EntitySet;
+  } = {};
   cachePath: string;
   // fsWatcher keeps an eye on the workspace for filesystem events
   fsWatcher: FileSystemWatcher;
 
   constructor(private definitionProvider: FshDefinitionProvider) {
+    this.cachePath = path.join(os.homedir(), '.fhir', 'packages');
     this.fsWatcher = workspace.createFileSystemWatcher('sushi-config.{yaml,yml}');
     this.fsWatcher.onDidChange(this.updateFhirEntities, this);
     this.fsWatcher.onDidCreate(this.updateFhirEntities, this);
@@ -204,9 +209,9 @@ export class FshCompletionProvider implements CompletionItemProvider {
     await Promise.all(
       dependencies.map(async dependency => {
         const packageKey = `${dependency.packageId}#${dependency.version}`;
-        if (this.fhirEntities[packageKey]) {
+        if (this.cachedFhirEntities[packageKey]) {
           // we already have it. assume it doesn't need to be reloaded
-          updatedEntities[packageKey] = this.fhirEntities[packageKey];
+          updatedEntities[packageKey] = this.cachedFhirEntities[packageKey];
           return;
         }
         try {
@@ -215,7 +220,6 @@ export class FshCompletionProvider implements CompletionItemProvider {
           // we use a similar decision scheme to SUSHI's FHIRDefinitions.add() method.
           const packagePath = path.join(
             this.cachePath,
-            'packages',
             `${dependency.packageId}#${dependency.version}`,
             'package'
           );
@@ -290,6 +294,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
               }
             })
           );
+          this.cachedFhirEntities[packageKey] = packageEntities;
           updatedEntities[packageKey] = packageEntities;
         } catch (err) {
           window.showInformationMessage(
