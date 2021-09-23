@@ -615,7 +615,7 @@ suite('FshCompletionProvider', () => {
       assert.equal(result, 'Resource');
     });
 
-    test('should identify a FHIR complex type as Resource', () => {
+    test('should identify a Type', () => {
       const fhirJson = {
         resourceType: 'StructureDefinition',
         type: 'MyComplexType',
@@ -624,7 +624,7 @@ suite('FshCompletionProvider', () => {
         name: 'MyComplexType'
       };
       const result = instance.determineEntityType(fhirJson);
-      assert.equal(result, 'Resource');
+      assert.equal(result, 'Type');
     });
 
     test('should identify an Extension', () => {

@@ -262,6 +262,13 @@ export class FshCompletionProvider implements CompletionItemProvider {
                         packageEntities.resources.push(item);
                       });
                       break;
+                    case 'Type':
+                      // a Type, such as Quantity, is allowed in the same contexts as a Resource
+                      items.forEach(item => {
+                        item.detail = `${dependency.packageId} Type`;
+                        packageEntities.resources.push(item);
+                      });
+                      break;
                     case 'Extension':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Extension`;
@@ -307,7 +314,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
     return updatedEntities;
   }
 
-  public determineEntityType(fhirJson: FhirContents): EntityType {
+  public determineEntityType(fhirJson: FhirContents): EntityType | 'Type' {
     if (fhirJson.resourceType === 'StructureDefinition') {
       if (fhirJson.type === 'Extension') {
         return 'Extension';
@@ -322,10 +329,10 @@ export class FshCompletionProvider implements CompletionItemProvider {
       ) {
         if (fhirJson.derivation === 'constraint') {
           return 'Profile';
-        } else {
-          // strictly speaking, some of the values for kind represent Types,
-          // but for autocomplete purposes, we can treat them as resources.
+        } else if (fhirJson.kind === 'resource') {
           return 'Resource';
+        } else {
+          return 'Type';
         }
       }
     } else if (fhirJson.resourceType === 'CodeSystem') {
