@@ -59,7 +59,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
 
   constructor(private definitionProvider: FshDefinitionProvider) {
     this.cachePath = path.join(os.homedir(), '.fhir', 'packages');
-    this.fsWatcher = workspace.createFileSystemWatcher('sushi-config.{yaml,yml}');
+    this.fsWatcher = workspace.createFileSystemWatcher('**/sushi-config.{yaml,yml}');
     this.fsWatcher.onDidChange(this.updateFhirEntities, this);
     this.fsWatcher.onDidCreate(this.updateFhirEntities, this);
     this.fsWatcher.onDidDelete(this.updateFhirEntities, this);
