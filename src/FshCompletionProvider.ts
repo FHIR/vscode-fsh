@@ -346,13 +346,27 @@ export class FshCompletionProvider implements CompletionItemProvider {
   public getEntityItems(allowedTypes: EntityType[]): CompletionItem[] {
     const entityItems: CompletionItem[] = [];
     this.definitionProvider.nameInformation.forEach((info, name) => {
-      if (info.map(info => info.type).some(presentType => allowedTypes.includes(presentType))) {
+      const allowedInfo = info.filter(specificInfo => {
+        return allowedTypes.includes(specificInfo.type);
+      });
+      if (allowedInfo.length > 0) {
+        // add an item based on the name
+        // list all of the types for that name, even though some of those types may not be currently allowed
         const item = new CompletionItem(name);
         item.detail = info
           .map(info => info.type)
           .sort()
           .join(', ');
         entityItems.push(item);
+        // add items based on the id, when the id exists and is different than the name
+        // these items only contain the type for the specific item
+        allowedInfo.forEach(specificInfo => {
+          if (specificInfo.id && specificInfo.id !== name) {
+            const item = new CompletionItem(specificInfo.id);
+            item.detail = specificInfo.type;
+            entityItems.push(item);
+          }
+        });
       }
     });
     return entityItems;

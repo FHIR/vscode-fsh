@@ -252,29 +252,44 @@ suite('FshCompletionProvider', () => {
   suite('#getEntityItems', () => {
     test('should return all CompletionItems that match the provided type when one type is provided', () => {
       const items = instance.getEntityItems(['Profile']);
-      assert.lengthOf(items, 4);
-      const observationItem = new vscode.CompletionItem('MyObservation');
-      observationItem.detail = 'Profile';
-      const patientItem = new vscode.CompletionItem('MyPatient');
-      patientItem.detail = 'Profile';
-      const reusedItem = new vscode.CompletionItem('ReusedName');
-      reusedItem.detail = 'Profile, ValueSet';
-      const specialItem = new vscode.CompletionItem('Extra_SpecialObservation');
-      specialItem.detail = 'Profile';
-      assert.includeDeepMembers(items, [observationItem, patientItem, reusedItem, specialItem]);
-    });
-
-    test('should return all CompletionItems that match at least one provided type when multiple types are provided', () => {
-      const items = instance.getEntityItems(['Profile', 'Logical']);
       assert.lengthOf(items, 6);
       const observationItem = new vscode.CompletionItem('MyObservation');
       observationItem.detail = 'Profile';
       const patientItem = new vscode.CompletionItem('MyPatient');
       patientItem.detail = 'Profile';
-      const reusedItem = new vscode.CompletionItem('ReusedName');
-      reusedItem.detail = 'Profile, ValueSet';
-      const specialItem = new vscode.CompletionItem('Extra_SpecialObservation');
-      specialItem.detail = 'Profile';
+      const reusedNameItem = new vscode.CompletionItem('ReusedName');
+      reusedNameItem.detail = 'Profile, ValueSet';
+      const reusedIdItem = new vscode.CompletionItem('reused-observation');
+      reusedIdItem.detail = 'Profile';
+      const specialNameItem = new vscode.CompletionItem('Extra_SpecialObservation');
+      specialNameItem.detail = 'Profile';
+      const specialIdItem = new vscode.CompletionItem('extra-special-observation');
+      specialIdItem.detail = 'Profile';
+      assert.includeDeepMembers(items, [
+        observationItem,
+        patientItem,
+        reusedNameItem,
+        reusedIdItem,
+        specialNameItem,
+        specialIdItem
+      ]);
+    });
+
+    test('should return all CompletionItems that match at least one provided type when multiple types are provided', () => {
+      const items = instance.getEntityItems(['Profile', 'Logical']);
+      assert.lengthOf(items, 8);
+      const observationItem = new vscode.CompletionItem('MyObservation');
+      observationItem.detail = 'Profile';
+      const patientItem = new vscode.CompletionItem('MyPatient');
+      patientItem.detail = 'Profile';
+      const reusedNameItem = new vscode.CompletionItem('ReusedName');
+      reusedNameItem.detail = 'Profile, ValueSet';
+      const reusedIdItem = new vscode.CompletionItem('reused-observation');
+      reusedIdItem.detail = 'Profile';
+      const specialNameItem = new vscode.CompletionItem('Extra_SpecialObservation');
+      specialNameItem.detail = 'Profile';
+      const specialIdItem = new vscode.CompletionItem('extra-special-observation');
+      specialIdItem.detail = 'Profile';
       const employeeItem = new vscode.CompletionItem('Employee');
       employeeItem.detail = 'Logical';
       const ptItem = new vscode.CompletionItem('Employee-PT');
@@ -282,8 +297,10 @@ suite('FshCompletionProvider', () => {
       assert.includeDeepMembers(items, [
         observationItem,
         patientItem,
-        reusedItem,
-        specialItem,
+        reusedNameItem,
+        reusedIdItem,
+        specialNameItem,
+        specialIdItem,
         employeeItem,
         ptItem
       ]);
