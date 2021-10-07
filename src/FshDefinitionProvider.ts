@@ -30,6 +30,7 @@ export type EntityType =
 export type NameInfo = {
   location: Location;
   type: EntityType;
+  id: string;
 };
 
 export class FshDefinitionProvider implements DefinitionProvider {
@@ -71,7 +72,7 @@ export class FshDefinitionProvider implements DefinitionProvider {
       // RuleSet, ValueSet
       if (doc.entity() && doc.entity().length > 0) {
         for (const entity of doc.entity()) {
-          const { name, startLine, entityType } = getNameAndLine(entity);
+          const { name, id, startLine, entityType } = getNameAndLine(entity);
           // if we found a name, add it to our maps
           if (name) {
             this.fileNames.get(fshFile).push(name);
@@ -80,7 +81,8 @@ export class FshDefinitionProvider implements DefinitionProvider {
             }
             this.nameInformation.get(name).push({
               location: new Location(Uri.file(fshFile), new Position(startLine, 0)),
-              type: entityType
+              type: entityType,
+              id
             });
           }
         }
@@ -131,7 +133,7 @@ export class FshDefinitionProvider implements DefinitionProvider {
         const newNames: string[] = [];
         if (doc.entity() && doc.entity().length > 0) {
           for (const entity of doc.entity()) {
-            const { name, startLine, entityType } = getNameAndLine(entity);
+            const { name, id, startLine, entityType } = getNameAndLine(entity);
             // if we found a name, add it to our maps
             if (name) {
               newNames.push(name);
@@ -140,7 +142,8 @@ export class FshDefinitionProvider implements DefinitionProvider {
               }
               this.nameInformation.get(name).push({
                 location: new Location(Uri.file(fshFile), new Position(startLine, 0)),
-                type: entityType
+                type: entityType,
+                id
               });
             }
           }
@@ -209,8 +212,11 @@ export class FshDefinitionProvider implements DefinitionProvider {
   }
 }
 
-function getNameAndLine(entity: any): { name: string; startLine: number; entityType: EntityType } {
+function getNameAndLine(
+  entity: any
+): { name: string; id: string; startLine: number; entityType: EntityType } {
   let name: string;
+  let id: string;
   let startLine: number;
   let entityType: EntityType;
   // some entities work a little differently
@@ -233,37 +239,67 @@ function getNameAndLine(entity: any): { name: string; startLine: number; entityT
     if (entity.profile()) {
       typedEntity = entity.profile();
       entityType = 'Profile';
+      if (typedEntity.sdMetadata()?.length > 0) {
+        id = getIdFromMetadata(typedEntity.sdMetadata());
+      }
     } else if (entity.extension()) {
       typedEntity = entity.extension();
       entityType = 'Extension';
+      if (typedEntity.sdMetadata()?.length > 0) {
+        id = getIdFromMetadata(typedEntity.sdMetadata());
+      }
     } else if (entity.logical()) {
       typedEntity = entity.logical();
       entityType = 'Logical';
+      if (typedEntity.sdMetadata()?.length > 0) {
+        id = getIdFromMetadata(typedEntity.sdMetadata());
+      }
     } else if (entity.resource()) {
       typedEntity = entity.resource();
       entityType = 'Resource';
+      if (typedEntity.sdMetadata()?.length > 0) {
+        id = getIdFromMetadata(typedEntity.sdMetadata());
+      }
     } else if (entity.instance()) {
       typedEntity = entity.instance();
       entityType = 'Instance';
     } else if (entity.valueSet()) {
       typedEntity = entity.valueSet();
       entityType = 'ValueSet';
+      if (typedEntity.vsMetadata()?.length > 0) {
+        id = getIdFromMetadata(typedEntity.vsMetadata());
+      }
     } else if (entity.codeSystem()) {
       typedEntity = entity.codeSystem();
       entityType = 'CodeSystem';
+      if (typedEntity.csMetadata()?.length > 0) {
+        id = getIdFromMetadata(typedEntity.csMetadata());
+      }
     } else if (entity.invariant()) {
       typedEntity = entity.invariant();
       entityType = 'Invariant';
     } else {
       typedEntity = entity.mapping();
       entityType = 'Mapping';
+      if (typedEntity.mappingMetadata()?.length > 0) {
+        id = getIdFromMetadata(typedEntity.mappingMetadata());
+      }
     }
     name = typedEntity.name().getText();
     startLine = typedEntity.start.line - 1;
   }
   return {
     name,
+    id,
     startLine,
     entityType
   };
+}
+
+function getIdFromMetadata(metadata: { id: () => any }[]): string {
+  for (const meta of metadata) {
+    if (meta.id()) {
+      return meta.id().name().getText();
+    }
+  }
 }

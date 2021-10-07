@@ -86,6 +86,7 @@ export function activate(
     languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance)
   );
   commands.registerCommand('extension.openFhir', openFhirDocumentation);
+  completionProviderInstance.updateFhirEntities();
   return { definitionProviderInstance, completionProviderInstance };
 }
 

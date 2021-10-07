@@ -39,11 +39,11 @@ suite('utils', () => {
 
     test('should get a name enclosed by parentheses', async () => {
       // MyPatient
-      // profiles2.fsh, line 5, col 33
+      // profiles2.fsh, line 6, col 33
       const fileUri = await vscode.workspace.findFiles('profiles/profiles2.fsh');
       assert.strictEqual(fileUri.length, 1);
       const document = await vscode.workspace.openTextDocument(fileUri[0]);
-      const position = new vscode.Position(4, 32);
+      const position = new vscode.Position(5, 32);
       const name = getTargetName(document, position);
       assert.strictEqual(name, 'MyPatient');
     });

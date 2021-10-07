@@ -1,0 +1,7 @@
+{
+    "resourceType": "StructureDefinition",
+    "type": "MyResource",
+    "kind": "resource",
+    "derivation": "constraint",
+    "name": "MyProfile"
+}
