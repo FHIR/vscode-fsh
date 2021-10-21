@@ -5,7 +5,7 @@
     "version": "1.6.0",
     "author": "The MITRE Corporation",
     "license": "Apache-2.0",
-    "publisher": "kmahalingam",
+    "publisher": "MITRE-Health",
     "icon": "images/docs/fsh-icon.png",
     "repository": {
         "type": "git",
