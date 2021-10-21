@@ -1,5 +1,0 @@
-{
-    "resourceType": "SearchParameter",
-    "name": "MySearchParameter",
-    "type": "reference"
-}

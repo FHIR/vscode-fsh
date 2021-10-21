@@ -1,6 +1,0 @@
-{
-    "resourceType": "StructureDefinition",
-    "kind": "logical",
-    "derivation": "specialization",
-    "name": "MyLogical"
-}
