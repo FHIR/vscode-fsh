@@ -15,7 +15,7 @@ suite('FshDefinitionProvider', () => {
   let instance: FshDefinitionProvider;
 
   before(() => {
-    extension = vscode.extensions.getExtension('kmahalingam.vscode-language-fsh');
+    extension = vscode.extensions.getExtension('mitre-health.vscode-language-fsh');
     instance = extension?.exports.definitionProviderInstance as FshDefinitionProvider;
   });
 

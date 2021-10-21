@@ -20,7 +20,7 @@ suite('FshCompletionProvider', () => {
   let instance: FshCompletionProvider;
 
   before(() => {
-    extension = vscode.extensions.getExtension('kmahalingam.vscode-language-fsh');
+    extension = vscode.extensions.getExtension('mitre-health.vscode-language-fsh');
     instance = extension?.exports.completionProviderInstance as FshCompletionProvider;
   });
 
