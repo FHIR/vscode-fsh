@@ -1,6 +1,9 @@
 {
 	"FSH Profile": {
-		"prefix": ["pro", "Pro"],
+		"prefix": [
+			"pro",
+			"Pro"
+		],
 		"body": [
 			"Profile: $1",
 			"Parent: $2",
@@ -11,9 +14,11 @@
 		],
 		"description": "Create a FSH Profile"
 	},
-
 	"FSH Extension": {
-		"prefix": ["ext", "Ext"],
+		"prefix": [
+			"ext",
+			"Ext"
+		],
 		"body": [
 			"Extension: $1",
 			"Id: ${2:${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}}",
@@ -23,9 +28,11 @@
 		],
 		"description": "Create a FSH Extension"
 	},
-
 	"FSH Logical": {
-		"prefix": ["log", "Log"],
+		"prefix": [
+			"log",
+			"Log"
+		],
 		"body": [
 			"Logical: $1",
 			"Parent: ${2:Base}",
@@ -36,9 +43,11 @@
 		],
 		"description": "Create a FSH Resource"
 	},
-
 	"FSH Resource": {
-		"prefix": ["res", "Res"],
+		"prefix": [
+			"res",
+			"Res"
+		],
 		"body": [
 			"Resource: $1",
 			"Parent: ${2|DomainResource,Resource|}",
@@ -49,9 +58,13 @@
 		],
 		"description": "Create a FSH Resource"
 	},
-
 	"FSH Value Set": {
-		"prefix": ["vs", "VS", "val", "Val"],
+		"prefix": [
+			"vs",
+			"VS",
+			"val",
+			"Val"
+		],
 		"body": [
 			"ValueSet: $1",
 			"Id: ${2:${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}}",
@@ -61,9 +74,13 @@
 		],
 		"description": "Create a FSH ValueSet"
 	},
-
 	"FSH Code System": {
-		"prefix": ["cs", "CS", "cod", "Cod"],
+		"prefix": [
+			"cs",
+			"CS",
+			"cod",
+			"Cod"
+		],
 		"body": [
 			"CodeSystem: $1",
 			"Id: ${2:${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}}",
@@ -73,9 +90,11 @@
 		],
 		"description": "Create a FSH Code System"
 	},
-
 	"FSH Instance": {
-		"prefix": ["inst", "Inst"],
+		"prefix": [
+			"inst",
+			"Inst"
+		],
 		"body": [
 			"Instance: $1",
 			"InstanceOf: $2",
@@ -86,9 +105,11 @@
 		],
 		"description": "Create a FSH Instance"
 	},
-
 	"FSH Invariant": {
-		"prefix": ["inv", "Inv"],
+		"prefix": [
+			"inv",
+			"Inv"
+		],
 		"body": [
 			"Invariant: $1",
 			"Description: \"$2\"",
@@ -100,9 +121,11 @@
 		],
 		"description": "Create a FSH Invariant"
 	},
-
 	"FSH Mapping": {
-		"prefix": ["map", "Map"],
+		"prefix": [
+			"map",
+			"Map"
+		],
 		"body": [
 			"Mapping: $1",
 			"Source: $2",
@@ -114,13 +137,31 @@
 		],
 		"description": "Create a FSH Invariant"
 	},
-
 	"FSH RuleSet": {
-		"prefix": ["RS", "rs", "rule", "Rule"],
+		"prefix": [
+			"RS",
+			"rs",
+			"rule",
+			"Rule"
+		],
 		"body": [
 			"RuleSet: $1",
 			"* $0"
 		],
 		"description": "Create a FSH RuleSet"
+	},
+	"Slicing rules": {
+		"prefix": [
+			"^slicing"
+		],
+		"body": [
+			"^slicing.discriminator.type = ${1|#value,#exists,#pattern,#type,#profile|}",
+			"${TM_CURRENT_LINE/\\s*([^\\^]+).*/$1/}^slicing.discriminator.path = \"$2\"",
+			"${TM_CURRENT_LINE/\\s*([^\\^]+).*/$1/}^slicing.rules = ${3|#open,#closed,#openAtEnd|}",
+			"${TM_CURRENT_LINE/\\s*([^\\^]+).*/$1/}^slicing.description = \"$4\"",
+			"${TM_CURRENT_LINE/\\s*([^\\^]+).*/$1/}^slicing.ordered = ${5|true,false|}",
+			"$0"
+		],
+		"description": "Add slicing rules"
 	}
 }

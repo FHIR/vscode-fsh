@@ -40,6 +40,8 @@ the &lt;TAB&gt; key to move to the next placeholder. All FSH snippets always sto
 | `map`   | Mapping    | Mapping, Source, Target, Id, Title (auto), Description          |
 | `rs `   | RuleSet    | RuleSet                                                         |
 
+Additionally, a snippet is provided to help when writing slicing rules. When the phrase `^sli` is detected, a block of rules can be inserted for the paths commonly set when defining slicing on an element.
+
 ## Enhanced Autocomplete
 
 FSH entity definitions have their names provided as autocomplete results in contextually appropriate scenarios.
