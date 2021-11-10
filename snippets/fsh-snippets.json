@@ -159,7 +159,7 @@
 			"${TM_CURRENT_LINE/\\s*([^\\^]+).*/$1/}^slicing.discriminator.path = \"$2\"",
 			"${TM_CURRENT_LINE/\\s*([^\\^]+).*/$1/}^slicing.rules = ${3|#open,#closed,#openAtEnd|}",
 			"${TM_CURRENT_LINE/\\s*([^\\^]+).*/$1/}^slicing.description = \"$4\"",
-			"${TM_CURRENT_LINE/\\s*([^\\^]+).*/$1/}^slicing.ordered = ${5|true,false|}",
+			"${TM_CURRENT_LINE/\\s*([^\\^]+).*/$1/}^slicing.ordered = ${5|false,true|}",
 			"$0"
 		],
 		"description": "Add slicing rules"
