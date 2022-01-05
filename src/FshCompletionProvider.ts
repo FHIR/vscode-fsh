@@ -131,6 +131,67 @@ export class FshCompletionProvider implements CompletionItemProvider {
     return { allowedTypes, extraNames };
   }
 
+  public getElementPathInformation(
+    document: TextDocument,
+    position: Position
+  ): {
+    baseDefinition: string;
+    existingPath: string[];
+  } {
+    // determine if our current line is defining a rule
+    // a path for a rule always comes first, if the rule has a path
+    // an obeys rule may have no path, but that's ok
+    const currentLine = document.getText(
+      new Range(position.line, 0, position.line, position.character)
+    );
+
+    // to offer completion items, the user must have at least typed the space that comes after the asterisk that starts the rule
+    const currentRulePath = currentLine.match(/^( *)\*( +\S*)/);
+    if (currentRulePath) {
+      const existingPath = currentRulePath[2]
+        .trimLeft()
+        .split('.')
+        .slice(0, -1)
+        .map(pathPart => pathPart.replace(/\[[^\]]+\]/g, ''));
+      const possibleNames = this.definitionProvider.fileNames.get(document.uri.fsPath);
+      const possibleEntities = possibleNames.flatMap(name => {
+        return this.definitionProvider.nameInformation
+          .get(name)
+          .filter(info => info.location.uri.fsPath == document.uri.fsPath)
+          .map(info => ({
+            name,
+            info
+          }));
+      });
+      // sort from bottom to top
+      const sortedEntities = possibleEntities.sort((a, b) =>
+        b.info.location.range.start.compareTo(a.info.location.range.start)
+      );
+      const targetEntity = sortedEntities.find(entity => {
+        return entity.info.location.range.start.isBeforeOrEqual(position);
+      });
+      if (targetEntity != null) {
+        if (targetEntity.info.type === 'Profile' && targetEntity.info.parent != null) {
+          return {
+            baseDefinition: targetEntity.info.parent,
+            existingPath
+          };
+        } else if (targetEntity.info.type === 'Instance' && targetEntity.info.instanceOf != null) {
+          return {
+            baseDefinition: targetEntity.info.instanceOf,
+            existingPath
+          };
+        } else if (targetEntity.info.type === 'Extension') {
+          return {
+            baseDefinition: targetEntity.info.parent ?? 'Extension',
+            existingPath
+          };
+        }
+      }
+    }
+    return null;
+  }
+
   public async updateFhirEntities(): Promise<void> {
     if (this.cachePath && path.isAbsolute(this.cachePath)) {
       let fhirPackage = 'hl7.fhir.r4.core';
@@ -415,13 +476,13 @@ export class FshCompletionProvider implements CompletionItemProvider {
       try {
         this.definitionProvider.handleDirtyFiles();
         const allowedInfo = this.getAllowedTypesAndExtraNames(document, position);
-        if (allowedInfo == null) {
-          reject();
-        } else {
+        if (allowedInfo != null) {
           const { allowedTypes, extraNames } = allowedInfo;
           const fhirItems = this.getFhirItems(allowedTypes);
           const names = this.getEntityItems(allowedTypes);
           resolve(names.concat(extraNames, fhirItems));
+        } else {
+          reject();
         }
       } catch (err) {
         reject(err);

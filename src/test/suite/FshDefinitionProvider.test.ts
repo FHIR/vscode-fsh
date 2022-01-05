@@ -41,7 +41,7 @@ suite('FshDefinitionProvider', () => {
 
   suite('#scanAll', () => {
     test('should have an entry in fileNames for each file path', () => {
-      assert.equal(instance.fileNames.size, 10);
+      assert.equal(instance.fileNames.size, 11);
 
       assert.containsAllKeys(instance.fileNames, [
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'profiles', 'profiles1.fsh'),
@@ -49,6 +49,7 @@ suite('FshDefinitionProvider', () => {
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'aliases.fsh'),
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'codesystems.fsh'),
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'extensions.fsh'),
+        path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'instances.fsh'),
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'invariants.fsh'),
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'rulesets.fsh'),
         path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'valuesets.fsh'),
@@ -121,7 +122,7 @@ suite('FshDefinitionProvider', () => {
     });
 
     test('should have an entry in nameInformation for each name', () => {
-      assert.equal(instance.nameInformation.size, 18);
+      assert.equal(instance.nameInformation.size, 19);
       assert.containsAllKeys(instance.nameInformation, [
         'MyObservation',
         'MyPatient',
@@ -132,6 +133,7 @@ suite('FshDefinitionProvider', () => {
         'MyCodeSystem',
         'AnotherCodeSystem',
         'IceCreamExtension',
+        'ThisOneObservation',
         'inv-1',
         'inv-2',
         'ext-1',
@@ -154,11 +156,34 @@ suite('FshDefinitionProvider', () => {
             new vscode.Position(74, 0)
           ),
           type: 'CodeSystem',
-          id: 'another-code-system'
+          id: 'another-code-system',
+          parent: undefined,
+          instanceOf: undefined
         }
       ];
       assert.sameDeepMembers(
         instance.nameInformation.get('AnotherCodeSystem'),
+        expectedInformation
+      );
+    });
+
+    test('should have all information stored for a name with instanceOf', () => {
+      const expectedInformation: NameInfo[] = [
+        {
+          location: new vscode.Location(
+            vscode.Uri.file(
+              path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'instances.fsh')
+            ),
+            new vscode.Position(3, 0)
+          ),
+          type: 'Instance',
+          id: undefined,
+          parent: undefined,
+          instanceOf: 'Observation'
+        }
+      ];
+      assert.sameDeepMembers(
+        instance.nameInformation.get('ThisOneObservation'),
         expectedInformation
       );
     });
@@ -177,7 +202,9 @@ suite('FshDefinitionProvider', () => {
             new vscode.Position(9, 0)
           ),
           type: 'Profile',
-          id: 'reused-observation'
+          id: 'reused-observation',
+          parent: 'Observation',
+          instanceOf: undefined
         },
         {
           location: new vscode.Location(
@@ -187,7 +214,9 @@ suite('FshDefinitionProvider', () => {
             new vscode.Position(9, 0)
           ),
           type: 'ValueSet',
-          id: 'reused-values'
+          id: 'reused-values',
+          parent: undefined,
+          instanceOf: undefined
         }
       ];
       assert.sameDeepMembers(instance.nameInformation.get('ReusedName'), expectedInformation);
@@ -220,14 +249,18 @@ suite('FshDefinitionProvider', () => {
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
       assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
     });
@@ -248,14 +281,18 @@ suite('FshDefinitionProvider', () => {
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
       assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
     });
@@ -277,14 +314,18 @@ suite('FshDefinitionProvider', () => {
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
       assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
     });
@@ -299,14 +340,18 @@ suite('FshDefinitionProvider', () => {
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
       instance.nameInformation.set('ParamRuleSet', [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
       // update from one file
@@ -316,14 +361,18 @@ suite('FshDefinitionProvider', () => {
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(0, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
       assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(3, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
     });
@@ -338,14 +387,18 @@ suite('FshDefinitionProvider', () => {
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
       instance.nameInformation.set('ParamRuleSet', [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
       // try to update from one file,
@@ -361,14 +414,18 @@ suite('FshDefinitionProvider', () => {
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(5, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
       assert.sameDeepMembers(instance.nameInformation.get('ParamRuleSet'), [
         {
           location: new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(10, 0)),
           type: 'RuleSet',
-          id: undefined
+          id: undefined,
+          parent: undefined,
+          instanceOf: undefined
         }
       ]);
     });

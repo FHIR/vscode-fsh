@@ -27,10 +27,14 @@ export type EntityType =
   | 'Invariant'
   | 'Mapping';
 
+export type MetadataField = 'id' | 'parent' | 'instanceOf';
+
 export type NameInfo = {
   location: Location;
   type: EntityType;
   id: string;
+  parent: string;
+  instanceOf: string;
 };
 
 export class FshDefinitionProvider implements DefinitionProvider {
@@ -72,7 +76,7 @@ export class FshDefinitionProvider implements DefinitionProvider {
       // RuleSet, ValueSet
       if (doc.entity() && doc.entity().length > 0) {
         for (const entity of doc.entity()) {
-          const { name, id, startLine, entityType } = getNameAndLine(entity);
+          const { name, id, startLine, entityType, parent, instanceOf } = getEntityDetails(entity);
           // if we found a name, add it to our maps
           if (name) {
             this.fileNames.get(fshFile).push(name);
@@ -82,7 +86,9 @@ export class FshDefinitionProvider implements DefinitionProvider {
             this.nameInformation.get(name).push({
               location: new Location(Uri.file(fshFile), new Position(startLine, 0)),
               type: entityType,
-              id
+              id,
+              parent,
+              instanceOf
             });
           }
         }
@@ -133,7 +139,9 @@ export class FshDefinitionProvider implements DefinitionProvider {
         const newNames: string[] = [];
         if (doc.entity() && doc.entity().length > 0) {
           for (const entity of doc.entity()) {
-            const { name, id, startLine, entityType } = getNameAndLine(entity);
+            const { name, id, startLine, entityType, parent, instanceOf } = getEntityDetails(
+              entity
+            );
             // if we found a name, add it to our maps
             if (name) {
               newNames.push(name);
@@ -143,7 +151,9 @@ export class FshDefinitionProvider implements DefinitionProvider {
               this.nameInformation.get(name).push({
                 location: new Location(Uri.file(fshFile), new Position(startLine, 0)),
                 type: entityType,
-                id
+                id,
+                parent,
+                instanceOf
               });
             }
           }
@@ -212,11 +222,20 @@ export class FshDefinitionProvider implements DefinitionProvider {
   }
 }
 
-function getNameAndLine(
+function getEntityDetails(
   entity: any
-): { name: string; id: string; startLine: number; entityType: EntityType } {
+): {
+  name: string;
+  id: string;
+  parent: string;
+  instanceOf: string;
+  startLine: number;
+  entityType: EntityType;
+} {
   let name: string;
   let id: string;
+  let parent: string;
+  let instanceOf: string;
   let startLine: number;
   let entityType: EntityType;
   // some entities work a little differently
@@ -241,12 +260,14 @@ function getNameAndLine(
       entityType = 'Profile';
       if (typedEntity.sdMetadata()?.length > 0) {
         id = getIdFromMetadata(typedEntity.sdMetadata());
+        parent = getParentFromMetadata(typedEntity.sdMetadata());
       }
     } else if (entity.extension()) {
       typedEntity = entity.extension();
       entityType = 'Extension';
       if (typedEntity.sdMetadata()?.length > 0) {
         id = getIdFromMetadata(typedEntity.sdMetadata());
+        parent = getParentFromMetadata(typedEntity.sdMetadata());
       }
     } else if (entity.logical()) {
       typedEntity = entity.logical();
@@ -263,6 +284,9 @@ function getNameAndLine(
     } else if (entity.instance()) {
       typedEntity = entity.instance();
       entityType = 'Instance';
+      if (typedEntity.instanceMetadata()?.length > 0) {
+        instanceOf = getInstanceOfFromMetadata(typedEntity.instanceMetadata());
+      }
     } else if (entity.valueSet()) {
       typedEntity = entity.valueSet();
       entityType = 'ValueSet';
@@ -292,7 +316,9 @@ function getNameAndLine(
     name,
     id,
     startLine,
-    entityType
+    entityType,
+    parent,
+    instanceOf
   };
 }
 
@@ -303,3 +329,28 @@ function getIdFromMetadata(metadata: { id: () => any }[]): string {
     }
   }
 }
+
+function getParentFromMetadata(metadata: { parent: () => any }[]): string {
+  for (const meta of metadata) {
+    if (meta.parent()) {
+      return meta.parent().name().getText();
+    }
+  }
+}
+
+function getInstanceOfFromMetadata(metadata: { instanceOf: () => any }[]): string {
+  for (const meta of metadata) {
+    if (meta.instanceOf()) {
+      return meta.instanceOf().name().getText();
+    }
+  }
+}
+
+// function getUsefulMetadata(
+//   rules: MetadataField[],
+//   metadata: { [key in MetadataField]?: () => any }[]
+// ): { [key in MetadataField]?: string } {
+//   const result: ReturnType<typeof getUsefulMetadata> = {};
+
+//   return result;
+// }

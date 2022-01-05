@@ -6,6 +6,7 @@ import path from 'path';
 import os from 'os';
 
 import { FshCompletionProvider } from '../../FshCompletionProvider';
+import { FshDefinitionProvider } from '../../FshDefinitionProvider';
 
 chai.use(spies);
 const { assert, expect } = chai;
@@ -18,10 +19,12 @@ const TEST_ROOT = path.join(__dirname, '..', '..', '..', 'src', 'test');
 suite('FshCompletionProvider', () => {
   let extension: vscode.Extension<any>;
   let instance: FshCompletionProvider;
+  let definitionInstance: FshDefinitionProvider;
 
   before(() => {
     extension = vscode.extensions.getExtension('mitre-health.vscode-language-fsh');
     instance = extension?.exports.completionProviderInstance as FshCompletionProvider;
+    definitionInstance = extension?.exports.definitionProviderInstance as FshDefinitionProvider;
   });
 
   suite('#constructor', () => {
@@ -341,6 +344,162 @@ suite('FshCompletionProvider', () => {
       const codeSystemItem = new vscode.CompletionItem('composition-attestation-mode');
       const valueSetItem = new vscode.CompletionItem('goal-start-event');
       assert.includeDeepMembers(items, [resourceItem, codeSystemItem, valueSetItem]);
+    });
+  });
+
+  suite('#getPathElements', () => {
+    // for these tests, just use the config-less default FHIR version
+    // for simplicity of cleanup, all test edits happen in profiles2.fsh, 5, 35
+    afterEach(async () => {
+      await vscode.window.showTextDocument(
+        vscode.Uri.file(
+          path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'profiles', 'profiles2.fsh')
+        )
+      );
+      await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+    });
+
+    test('should get the parent and no existing path when writing a Profile rule with no existing path parts', async () => {
+      const filePath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'profiles',
+        'profiles2.fsh'
+      );
+      const doc = await vscode.workspace.openTextDocument(filePath);
+      const fileChange = new vscode.WorkspaceEdit();
+      fileChange.insert(
+        vscode.Uri.file(filePath),
+        new vscode.Position(5, 35),
+        `${EOL}${EOL}Profile: ExtraObservation${EOL}Parent: Observation${EOL}* sta`
+      );
+      await vscode.workspace.applyEdit(fileChange);
+      definitionInstance.updateNamesFromFile(filePath, doc);
+      const result = instance.getElementPathInformation(doc, new vscode.Position(9, 5));
+      assert.equal(result.baseDefinition, 'Observation');
+      assert.lengthOf(result.existingPath, 0);
+    });
+
+    test('should get the parent and path parts when writing a Profile rule with an existing path part', async () => {
+      const filePath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'profiles',
+        'profiles2.fsh'
+      );
+      const doc = await vscode.workspace.openTextDocument(filePath);
+      const fileChange = new vscode.WorkspaceEdit();
+      fileChange.insert(
+        vscode.Uri.file(filePath),
+        new vscode.Position(5, 35),
+        `${EOL}${EOL}Profile: ExtraPatient${EOL}Parent: Patient${EOL}* contact.`
+      );
+      await vscode.workspace.applyEdit(fileChange);
+      definitionInstance.updateNamesFromFile(filePath, doc);
+      const result = instance.getElementPathInformation(doc, new vscode.Position(9, 10));
+      assert.equal(result.baseDefinition, 'Patient');
+      assert.lengthOf(result.existingPath, 1);
+      assert.deepEqual(result.existingPath, ['contact']);
+    });
+
+    test('should get the parent and path parts when writing a Profile rule with existing path parts that include a slice', async () => {
+      const filePath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'profiles',
+        'profiles2.fsh'
+      );
+      const doc = await vscode.workspace.openTextDocument(filePath);
+      const fileChange = new vscode.WorkspaceEdit();
+      fileChange.insert(
+        vscode.Uri.file(filePath),
+        new vscode.Position(5, 35),
+        `${EOL}${EOL}Profile: ExtraObservation${EOL}Parent: Observation${EOL}* component[ExtraSlice].inte`
+      );
+      await vscode.workspace.applyEdit(fileChange);
+      definitionInstance.updateNamesFromFile(filePath, doc);
+      const result = instance.getElementPathInformation(doc, new vscode.Position(9, 28));
+      assert.equal(result.baseDefinition, 'Observation');
+      assert.lengthOf(result.existingPath, 1);
+      assert.deepEqual(result.existingPath, ['component']);
+    });
+
+    test('should get the parent and path parts when writing a Profile rule with multiple existing path parts', async () => {
+      const filePath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'profiles',
+        'profiles2.fsh'
+      );
+      const doc = await vscode.workspace.openTextDocument(filePath);
+      const fileChange = new vscode.WorkspaceEdit();
+      fileChange.insert(
+        vscode.Uri.file(filePath),
+        new vscode.Position(5, 35),
+        `${EOL}${EOL}Profile: ExtraObservation${EOL}Parent: Observation${EOL}* component[ExtraSlice].referenceRange.`
+      );
+      await vscode.workspace.applyEdit(fileChange);
+      definitionInstance.updateNamesFromFile(filePath, doc);
+      const result = instance.getElementPathInformation(doc, new vscode.Position(9, 39));
+      assert.equal(result.baseDefinition, 'Observation');
+      assert.lengthOf(result.existingPath, 2);
+      assert.deepEqual(result.existingPath, ['component', 'referenceRange']);
+    });
+
+    test('should get the default parent for an Extension that does not have a Parent keyword', async () => {
+      const filePath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'profiles',
+        'profiles2.fsh'
+      );
+      const doc = await vscode.workspace.openTextDocument(filePath);
+      const fileChange = new vscode.WorkspaceEdit();
+      fileChange.insert(
+        vscode.Uri.file(filePath),
+        new vscode.Position(5, 35),
+        `${EOL}${EOL}Extension: MyNewExtension${EOL}* ex`
+      );
+      await vscode.workspace.applyEdit(fileChange);
+      definitionInstance.updateNamesFromFile(filePath, doc);
+      const result = instance.getElementPathInformation(doc, new vscode.Position(8, 4));
+      assert.equal(result.baseDefinition, 'Extension');
+      assert.lengthOf(result.existingPath, 0);
+    });
+
+    test('should return null when writing a rule for something other than a Profile or Extension', async () => {
+      const filePath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'profiles',
+        'profiles2.fsh'
+      );
+      const doc = await vscode.workspace.openTextDocument(filePath);
+      const fileChange = new vscode.WorkspaceEdit();
+      fileChange.insert(
+        vscode.Uri.file(filePath),
+        new vscode.Position(5, 35),
+        `${EOL}${EOL}Logical: MyLogical${EOL}* f`
+      );
+      await vscode.workspace.applyEdit(fileChange);
+      definitionInstance.updateNamesFromFile(filePath, doc);
+      const result = instance.getElementPathInformation(doc, new vscode.Position(8, 3));
+      assert.isNull(result);
+    });
+
+    test.skip('should get the path parts when writing an indented rule', async () => {
+      const filePath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'profiles',
+        'profiles2.fsh'
+      );
+      const doc = await vscode.workspace.openTextDocument(filePath);
+      const fileChange = new vscode.WorkspaceEdit();
+      fileChange.insert(
+        vscode.Uri.file(filePath),
+        new vscode.Position(5, 35),
+        `${EOL}${EOL}Profile: ExtraObservation${EOL}Parent: Observation${EOL}* component MS${EOL}  * `
+      );
+      await vscode.workspace.applyEdit(fileChange);
+      definitionInstance.updateNamesFromFile(filePath, doc);
+      const result = instance.getElementPathInformation(doc, new vscode.Position(10, 4));
+      assert.equal(result.baseDefinition, 'Observation');
+      assert.lengthOf(result.existingPath, 1);
+      assert.deepEqual(result.existingPath, ['component']);
     });
   });
 
