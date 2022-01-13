@@ -1,11 +1,11 @@
 import chai from 'chai';
 import spies from 'chai-spies';
-import { before, beforeEach, afterEach } from 'mocha';
+import { before, beforeEach, after, afterEach } from 'mocha';
 import * as vscode from 'vscode';
 import path from 'path';
 import os from 'os';
 
-import { FshCompletionProvider } from '../../FshCompletionProvider';
+import { FshCompletionProvider, EnhancedCompletionItem } from '../../FshCompletionProvider';
 import { FshDefinitionProvider } from '../../FshDefinitionProvider';
 
 chai.use(spies);
@@ -36,7 +36,9 @@ suite('FshCompletionProvider', () => {
 
   suite('#getAllowedTypesAndExtraNames', () => {
     // for simplicity of cleanup, all test edits happen in codesystems.fsh
-    afterEach(async () => {
+    afterEach(async function () {
+      // this step can sometimes take awhile, so increase the allowed time to 5 seconds
+      this.timeout(5000);
       await vscode.window.showTextDocument(
         vscode.Uri.file(
           path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'codesystems.fsh')
@@ -318,16 +320,15 @@ suite('FshCompletionProvider', () => {
       const fhirExtensions = [new vscode.CompletionItem('goal-reasonRejected')];
       const fhirCodeSystems = [new vscode.CompletionItem('composition-attestation-mode')];
       const fhirValueSets = [new vscode.CompletionItem('goal-start-event')];
-      instance.fhirEntities = {
-        'some.package': {
-          profiles: fhirProfiles,
-          resources: fhirResources,
-          extensions: fhirExtensions,
-          logicals: [],
-          codeSystems: fhirCodeSystems,
-          valueSets: fhirValueSets
-        }
-      };
+      instance.fhirEntities = new Map();
+      instance.fhirEntities.set('some.package', {
+        profiles: new Map(fhirProfiles.map(item => [item.label, item])),
+        resources: new Map(fhirResources.map(item => [item.label, item])),
+        extensions: new Map(fhirExtensions.map(item => [item.label, item])),
+        logicals: new Map(),
+        codeSystems: new Map(fhirCodeSystems.map(item => [item.label, item])),
+        valueSets: new Map(fhirValueSets.map(item => [item.label, item]))
+      });
     });
 
     test('should return all CompletionItems that match the provided type when one type is provided', () => {
@@ -347,7 +348,7 @@ suite('FshCompletionProvider', () => {
     });
   });
 
-  suite('#getPathElements', () => {
+  suite('#getElementPathInformation', () => {
     // for these tests, just use the config-less default FHIR version
     // for simplicity of cleanup, all test edits happen in profiles2.fsh, 5, 35
     afterEach(async () => {
@@ -503,6 +504,249 @@ suite('FshCompletionProvider', () => {
     });
   });
 
+  suite('#getBaseDefinitionElements', () => {
+    before(() => {
+      // set up a small set of FHIR entities
+      // first, some core entities for the default parents
+      const coreDomainResource: EnhancedCompletionItem = new vscode.CompletionItem(
+        'DomainResource'
+      );
+      coreDomainResource.elementPaths = ['DomainResource', 'DomainResource.id'];
+      const coreBase: EnhancedCompletionItem = new vscode.CompletionItem('Base');
+      coreBase.elementPaths = ['Base'];
+      const coreExtension: EnhancedCompletionItem = new vscode.CompletionItem('Extension');
+      coreExtension.elementPaths = ['Extension', 'Extension.id', 'Extension.extension'];
+      // then, some of our own custom packages
+      const smallProfile: EnhancedCompletionItem = new vscode.CompletionItem('SomeProfile');
+      smallProfile.elementPaths = ['Something', 'Something.name', 'Something.title'];
+      const smallResource: EnhancedCompletionItem = new vscode.CompletionItem('SmallResource');
+      smallResource.elementPaths = [
+        'Small',
+        'Small.height',
+        'Small.width',
+        'Small.material',
+        'Small.material.description'
+      ];
+      const largeResource: EnhancedCompletionItem = new vscode.CompletionItem('LargeResource');
+      largeResource.elementPaths = ['Large', 'Large.big', 'Large.big.huge'];
+      const regularExtension: EnhancedCompletionItem = new vscode.CompletionItem(
+        'RegularExtension'
+      );
+      regularExtension.elementPaths = ['Extension', 'Extension.value[x]', 'Extension.extension'];
+      const someLogical: EnhancedCompletionItem = new vscode.CompletionItem('SomeLogical');
+      someLogical.elementPaths = ['SomeLogical', 'SomeLogical.question', 'SomeLogical.answer'];
+      const someCodeSystem: EnhancedCompletionItem = new vscode.CompletionItem('SomeCS');
+      const someValueSet: EnhancedCompletionItem = new vscode.CompletionItem('SomeVS');
+
+      instance.fhirEntities = new Map();
+      instance.fhirEntities.set('fake-fhir-core-package', {
+        profiles: new Map(),
+        resources: new Map([
+          [coreDomainResource.label, coreDomainResource],
+          [coreBase.label, coreBase]
+        ]),
+        extensions: new Map([[coreExtension.label, coreExtension]]),
+        logicals: new Map(),
+        codeSystems: new Map(),
+        valueSets: new Map()
+      });
+      instance.fhirEntities.set('first-package', {
+        profiles: new Map([[smallProfile.label, smallProfile]]),
+        resources: new Map([
+          [smallResource.label, smallResource],
+          [largeResource.label, largeResource]
+        ]),
+        extensions: new Map(),
+        logicals: new Map(),
+        codeSystems: new Map([[someCodeSystem.label, someCodeSystem]]),
+        valueSets: new Map()
+      });
+      instance.fhirEntities.set('second-package', {
+        profiles: new Map(),
+        resources: new Map(),
+        extensions: new Map([[regularExtension.label, regularExtension]]),
+        logicals: new Map([[someLogical.label, someLogical]]),
+        codeSystems: new Map(),
+        valueSets: new Map([[someValueSet.label, someValueSet]])
+      });
+
+      // set up a small set of FSH entities. we don't need locations for these.
+      definitionInstance.nameInformation = new Map();
+      // MyLargeProfile is a Profile with parent LargeResource
+      definitionInstance.nameInformation.set('MyLargeProfile', [
+        {
+          location: null,
+          type: 'Profile',
+          id: null,
+          parent: 'LargeResource',
+          instanceOf: null
+        }
+      ]);
+      // QuizShow is a Logical with parent SomeLogical
+      definitionInstance.nameInformation.set('QuizShow', [
+        {
+          location: null,
+          type: 'Logical',
+          id: null,
+          parent: 'SomeLogical',
+          instanceOf: null
+        }
+      ]);
+      // PopQuiz is a Profile with parent QuizShow
+      definitionInstance.nameInformation.set('PopQuiz', [
+        {
+          location: null,
+          type: 'Profile',
+          id: null,
+          parent: 'QuizShow',
+          instanceOf: null
+        }
+      ]);
+      // PopQuizForToday is an Instance of PopQuiz
+      definitionInstance.nameInformation.set('PopQuizForToday', [
+        {
+          location: null,
+          type: 'Instance',
+          id: null,
+          parent: null,
+          instanceOf: 'PopQuiz'
+        }
+      ]);
+      // UnknownProfile is a Profile with parent SomeNonexistentResource (doesn't exist)
+      definitionInstance.nameInformation.set('UnknownProfile', [
+        {
+          location: null,
+          type: 'Profile',
+          id: null,
+          parent: 'SomeNonexistentResource',
+          instanceOf: null
+        }
+      ]);
+      // MysteryEntity is a Profile with parent UnknownProfile
+      definitionInstance.nameInformation.set('MysteryEntity', [
+        {
+          location: null,
+          type: 'Profile',
+          id: null,
+          parent: 'UnknownProfile',
+          instanceOf: null
+        }
+      ]);
+      // entities using the default parent
+      // MyNewExtension is an Extension with no specified parent
+      definitionInstance.nameInformation.set('MyNewExtension', [
+        {
+          location: null,
+          type: 'Extension',
+          id: null,
+          parent: null,
+          instanceOf: null
+        }
+      ]);
+      // MyNewLogical is a Logical with no specified parent
+      definitionInstance.nameInformation.set('MyNewLogical', [
+        {
+          location: null,
+          type: 'Logical',
+          id: null,
+          parent: null,
+          instanceOf: null
+        }
+      ]);
+      // MyNewResource is a Resource with no specified parent
+      definitionInstance.nameInformation.set('MyNewResource', [
+        {
+          location: null,
+          type: 'Resource',
+          id: null,
+          parent: null,
+          instanceOf: null
+        }
+      ]);
+    });
+
+    after(() => {
+      definitionInstance.scanAll();
+    });
+
+    test('should get element paths for a FHIR profile', () => {
+      const elementPaths = instance.getBaseDefinitionElements('SomeProfile');
+      assert.deepEqual(elementPaths, ['Something', 'Something.name', 'Something.title']);
+    });
+
+    test('should get element paths for a FHIR resource', () => {
+      const elementPaths = instance.getBaseDefinitionElements('LargeResource');
+      assert.deepEqual(elementPaths, ['Large', 'Large.big', 'Large.big.huge']);
+    });
+
+    test('should get element paths for a FHIR extension', () => {
+      const elementPaths = instance.getBaseDefinitionElements('RegularExtension');
+      assert.deepEqual(elementPaths, ['Extension', 'Extension.value[x]', 'Extension.extension']);
+    });
+
+    test('should get element paths for a FHIR logical model', () => {
+      const elementPaths = instance.getBaseDefinitionElements('SomeLogical');
+      assert.deepEqual(elementPaths, ['SomeLogical', 'SomeLogical.question', 'SomeLogical.answer']);
+    });
+
+    test('should get null for a FHIR code system', () => {
+      const elementPaths = instance.getBaseDefinitionElements('SomeCS');
+      assert.isNull(elementPaths);
+    });
+
+    test('should get null for a FHIR value set', () => {
+      const elementPaths = instance.getBaseDefinitionElements('SomeVS');
+      assert.isNull(elementPaths);
+    });
+
+    test('should get null when no entity with the name exists', () => {
+      const elementPaths = instance.getBaseDefinitionElements('NothingHere');
+      assert.isNull(elementPaths);
+    });
+
+    test('should get element paths for a FSH definition with a FHIR parent', () => {
+      const elementPaths = instance.getBaseDefinitionElements('MyLargeProfile');
+      // MyLargeProfile's parent is LargeResource
+      assert.deepEqual(elementPaths, ['Large', 'Large.big', 'Large.big.huge']);
+    });
+
+    test('should get element paths for a FSH definition with a FSH parent and FHIR ancestor', () => {
+      const elementPaths = instance.getBaseDefinitionElements('PopQuiz');
+      // PopQuiz's parent is QuizShow. QuizShow's parent is SomeLogical
+      assert.deepEqual(elementPaths, ['SomeLogical', 'SomeLogical.question', 'SomeLogical.answer']);
+    });
+
+    test('should get element paths for a FSH instance definition that is an instance of another FSH definition', () => {
+      const elementPaths = instance.getBaseDefinitionElements('PopQuizForToday');
+      // PopQuizForToday is an instance of PopQuiz
+      assert.deepEqual(elementPaths, ['SomeLogical', 'SomeLogical.question', 'SomeLogical.answer']);
+    });
+
+    test('should get null for a FSH definition with a FSH parent and no ancestor which is a defined FHIR entity', () => {
+      const elementPaths = instance.getBaseDefinitionElements('MysteryEntity');
+      // MysteryEntity's parent is UnknownProfile. UnknownProfile's parent is SomeNonexistentResource, which doesn't exist
+      assert.isNull(elementPaths);
+    });
+
+    test('should get element paths for FHIR Extension when the named entity is a FSH Extension with no specified parent', () => {
+      const elementPaths = instance.getBaseDefinitionElements('MyNewExtension');
+      // MyNewExtension has no parent, so it defaults to Extension
+      assert.deepEqual(elementPaths, ['Extension', 'Extension.id', 'Extension.extension']);
+    });
+
+    test('should get element paths for FHIR DomainResource when the named entity is a FSH Resource with no specified parent', () => {
+      const elementPaths = instance.getBaseDefinitionElements('MyNewResource');
+      // MyNewResource has no parent, so it defaults to DomainResource
+      assert.deepEqual(elementPaths, ['DomainResource', 'DomainResource.id']);
+    });
+
+    test('should get element paths for FHIR Base when the named entity is a FSH Logical with no specified parent', () => {
+      const elementPaths = instance.getBaseDefinitionElements('MyNewLogical');
+      // MyNewLogical has no parent, so it defaults to Base
+      assert.deepEqual(elementPaths, ['Base']);
+    });
+  });
+
   suite('#updateFhirEntities', () => {
     const defaultConfig = [
       'id: cookie.mountain',
@@ -521,7 +765,7 @@ suite('FshCompletionProvider', () => {
         await vscode.workspace.fs.delete(configFile);
       }
       instance.cachePath = path.join(os.homedir(), '.fhir', 'packages');
-      instance.fhirEntities = {};
+      instance.fhirEntities = new Map();
       chai.spy.restore();
     });
 
@@ -633,8 +877,8 @@ suite('FshCompletionProvider', () => {
 
   suite('#makeItemsFromDependencies', () => {
     beforeEach(() => {
-      instance.fhirEntities = {};
-      instance.cachedFhirEntities = {};
+      instance.fhirEntities = new Map();
+      instance.cachedFhirEntities = new Map();
     });
 
     afterEach(() => {
@@ -671,52 +915,52 @@ suite('FshCompletionProvider', () => {
       const expectedValueSet = new vscode.CompletionItem('my-value-set');
       expectedValueSet.detail = 'hl7.fhir.r4.core ValueSet';
 
-      assert.lengthOf(items['some.other.package#1.0.1'].profiles, 1);
-      assert.deepInclude(items['some.other.package#1.0.1'].profiles, expectedProfile);
-      assert.lengthOf(items['hl7.fhir.r4.core#4.0.1'].resources, 1);
-      assert.deepInclude(items['hl7.fhir.r4.core#4.0.1'].resources, expectedResource);
-      assert.lengthOf(items['some.other.package#1.0.1'].extensions, 1);
-      assert.deepInclude(items['some.other.package#1.0.1'].extensions, expectedExtension);
-      assert.lengthOf(items['some.other.package#1.0.1'].logicals, 1);
-      assert.deepInclude(items['some.other.package#1.0.1'].logicals, expectedLogical);
-      assert.lengthOf(items['hl7.fhir.r4.core#4.0.1'].codeSystems, 2);
-      assert.deepInclude(items['hl7.fhir.r4.core#4.0.1'].codeSystems, expectedNameCodeSystem);
-      assert.deepInclude(items['hl7.fhir.r4.core#4.0.1'].codeSystems, expectedIdCodeSystem);
-      assert.lengthOf(items['hl7.fhir.r4.core#4.0.1'].valueSets, 1);
-      assert.deepInclude(items['hl7.fhir.r4.core#4.0.1'].valueSets, expectedValueSet);
+      assert.equal(items.get('some.other.package#1.0.1').profiles.size, 1);
+      assert.deepInclude(items.get('some.other.package#1.0.1').profiles, expectedProfile);
+      assert.equal(items.get('hl7.fhir.r4.core#4.0.1').resources.size, 1);
+      assert.deepInclude(items.get('hl7.fhir.r4.core#4.0.1').resources, expectedResource);
+      assert.equal(items.get('some.other.package#1.0.1').extensions.size, 1);
+      assert.deepInclude(items.get('some.other.package#1.0.1').extensions, expectedExtension);
+      assert.equal(items.get('some.other.package#1.0.1').logicals.size, 1);
+      assert.deepInclude(items.get('some.other.package#1.0.1').logicals, expectedLogical);
+      assert.equal(items.get('hl7.fhir.r4.core#4.0.1').codeSystems.size, 2);
+      assert.deepInclude(items.get('hl7.fhir.r4.core#4.0.1').codeSystems, expectedNameCodeSystem);
+      assert.deepInclude(items.get('hl7.fhir.r4.core#4.0.1').codeSystems, expectedIdCodeSystem);
+      assert.equal(items.get('hl7.fhir.r4.core#4.0.1').valueSets.size, 1);
+      assert.deepInclude(items.get('hl7.fhir.r4.core#4.0.1').valueSets, expectedValueSet);
 
-      assert.lengthOf(instance.cachedFhirEntities['some.other.package#1.0.1'].profiles, 1);
+      assert.equal(instance.cachedFhirEntities.get('some.other.package#1.0.1').profiles.size, 1);
       assert.deepInclude(
-        instance.cachedFhirEntities['some.other.package#1.0.1'].profiles,
+        instance.cachedFhirEntities.get('some.other.package#1.0.1').profiles,
         expectedProfile
       );
-      assert.lengthOf(instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].resources, 1);
+      assert.equal(instance.cachedFhirEntities.get('hl7.fhir.r4.core#4.0.1').resources.size, 1);
       assert.deepInclude(
-        instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].resources,
+        instance.cachedFhirEntities.get('hl7.fhir.r4.core#4.0.1').resources,
         expectedResource
       );
-      assert.lengthOf(instance.cachedFhirEntities['some.other.package#1.0.1'].extensions, 1);
+      assert.equal(instance.cachedFhirEntities.get('some.other.package#1.0.1').extensions.size, 1);
       assert.deepInclude(
-        instance.cachedFhirEntities['some.other.package#1.0.1'].extensions,
+        instance.cachedFhirEntities.get('some.other.package#1.0.1').extensions,
         expectedExtension
       );
-      assert.lengthOf(instance.cachedFhirEntities['some.other.package#1.0.1'].logicals, 1);
+      assert.equal(instance.cachedFhirEntities.get('some.other.package#1.0.1').logicals.size, 1);
       assert.deepInclude(
-        instance.cachedFhirEntities['some.other.package#1.0.1'].logicals,
+        instance.cachedFhirEntities.get('some.other.package#1.0.1').logicals,
         expectedLogical
       );
-      assert.lengthOf(instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].codeSystems, 2);
+      assert.equal(instance.cachedFhirEntities.get('hl7.fhir.r4.core#4.0.1').codeSystems.size, 2);
       assert.deepInclude(
-        instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].codeSystems,
+        instance.cachedFhirEntities.get('hl7.fhir.r4.core#4.0.1').codeSystems,
         expectedNameCodeSystem
       );
       assert.deepInclude(
-        instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].codeSystems,
+        instance.cachedFhirEntities.get('hl7.fhir.r4.core#4.0.1').codeSystems,
         expectedIdCodeSystem
       );
-      assert.lengthOf(instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].valueSets, 1);
+      assert.equal(instance.cachedFhirEntities.get('hl7.fhir.r4.core#4.0.1').valueSets.size, 1);
       assert.deepInclude(
-        instance.cachedFhirEntities['hl7.fhir.r4.core#4.0.1'].valueSets,
+        instance.cachedFhirEntities.get('hl7.fhir.r4.core#4.0.1').valueSets,
         expectedValueSet
       );
     });
@@ -729,26 +973,26 @@ suite('FshCompletionProvider', () => {
           version: '1.0.1'
         }
       ];
-      instance.cachedFhirEntities['very.good.package#1.0.1'] = {
-        profiles: [new vscode.CompletionItem('SomeProfile')],
-        resources: [],
-        extensions: [],
-        logicals: [
-          new vscode.CompletionItem('LogicalOne'),
-          new vscode.CompletionItem('LogicalTwo'),
-          new vscode.CompletionItem('LogicalThree')
-        ],
-        codeSystems: [],
-        valueSets: []
-      };
+      instance.cachedFhirEntities.set('very.good.package#1.0.1', {
+        profiles: new Map([['SomeProfile', new vscode.CompletionItem('SomeProfile')]]),
+        resources: new Map(),
+        extensions: new Map(),
+        logicals: new Map([
+          ['LogicalOne', new vscode.CompletionItem('LogicalOne')],
+          ['LogicalTwo', new vscode.CompletionItem('LogicalTwo')],
+          ['LogicalThree', new vscode.CompletionItem('LogicalThree')]
+        ]),
+        codeSystems: new Map(),
+        valueSets: new Map()
+      });
       const items = await instance.makeItemsFromDependencies(dependencies);
       assert.hasAllKeys(items, ['very.good.package#1.0.1']);
-      assert.lengthOf(items['very.good.package#1.0.1'].profiles, 1);
-      assert.lengthOf(items['very.good.package#1.0.1'].resources, 0);
-      assert.lengthOf(items['very.good.package#1.0.1'].extensions, 0);
-      assert.lengthOf(items['very.good.package#1.0.1'].logicals, 3);
-      assert.lengthOf(items['very.good.package#1.0.1'].codeSystems, 0);
-      assert.lengthOf(items['very.good.package#1.0.1'].valueSets, 0);
+      assert.equal(items.get('very.good.package#1.0.1').profiles.size, 1);
+      assert.equal(items.get('very.good.package#1.0.1').resources.size, 0);
+      assert.equal(items.get('very.good.package#1.0.1').extensions.size, 0);
+      assert.equal(items.get('very.good.package#1.0.1').logicals.size, 3);
+      assert.equal(items.get('very.good.package#1.0.1').codeSystems.size, 0);
+      assert.equal(items.get('very.good.package#1.0.1').valueSets.size, 0);
       // since we got these items from the cache, we shouldn't have read any files
       expect(readFileSpy).to.have.been.called.exactly(0);
     });

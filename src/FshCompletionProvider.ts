@@ -24,6 +24,8 @@ export type FhirContents = {
   derivation?: string;
 };
 
+export type EnhancedCompletionItem = CompletionItem & { elementPaths?: string[] };
+
 type DependencyDetails = {
   id: string;
   uri: string;
@@ -38,21 +40,17 @@ type SushiConfiguration = {
 };
 
 type EntitySet = {
-  profiles: CompletionItem[];
-  resources: CompletionItem[];
-  extensions: CompletionItem[];
-  logicals: CompletionItem[];
-  codeSystems: CompletionItem[];
-  valueSets: CompletionItem[];
+  profiles: Map<string, EnhancedCompletionItem>;
+  resources: Map<string, EnhancedCompletionItem>;
+  extensions: Map<string, EnhancedCompletionItem>;
+  logicals: Map<string, EnhancedCompletionItem>;
+  codeSystems: Map<string, EnhancedCompletionItem>;
+  valueSets: Map<string, EnhancedCompletionItem>;
 };
 
 export class FshCompletionProvider implements CompletionItemProvider {
-  fhirEntities: {
-    [key: string]: EntitySet;
-  } = {};
-  cachedFhirEntities: {
-    [key: string]: EntitySet;
-  } = {};
+  fhirEntities: Map<string, EntitySet> = new Map();
+  cachedFhirEntities: Map<string, EntitySet> = new Map();
   cachePath: string;
   // fsWatcher keeps an eye on the workspace for filesystem events
   fsWatcher: FileSystemWatcher;
@@ -192,6 +190,60 @@ export class FshCompletionProvider implements CompletionItemProvider {
     return null;
   }
 
+  public getBaseDefinitionElements(entityName: string): string[] {
+    // is the entity something that is locally defined?
+    // if so, look up parents until we get something not locally defined,
+    // or until we detect a circular reference.
+    let entityToCheck = entityName;
+    const checkedEntities: string[] = [];
+    while (this.definitionProvider.nameInformation.has(entityToCheck)) {
+      if (checkedEntities.includes(entityToCheck)) {
+        // circular reference escape hatch
+        return null;
+      }
+      checkedEntities.push(entityToCheck);
+      const entityInfo = this.definitionProvider.nameInformation.get(entityToCheck);
+      // take the first potentially useful thing from entityInfo
+      const infoToUse = entityInfo.find(info =>
+        ['Profile', 'Extension', 'Resource', 'Logical', 'Instance'].includes(info.type)
+      );
+      if (infoToUse == null) {
+        // no useful info means no useful paths
+        return null;
+      }
+      entityToCheck = infoToUse.parent ?? infoToUse.instanceOf;
+      // special handling for default parents:
+      // an Extension's default parent is Extension
+      // a Resource's default parent is DomainResource
+      // a Logical's default parent is Base
+      if (entityToCheck == null) {
+        if (infoToUse.type === 'Extension') {
+          entityToCheck = 'Extension';
+        } else if (infoToUse.type === 'Resource') {
+          entityToCheck = 'DomainResource';
+        } else if (infoToUse.type === 'Logical') {
+          entityToCheck = 'Base';
+        }
+      }
+    }
+    // is the entity present in the dependencies' entities?
+    for (const [, entities] of this.fhirEntities) {
+      if (entities.profiles.has(entityToCheck)) {
+        return entities.profiles.get(entityToCheck).elementPaths;
+      }
+      if (entities.extensions.has(entityToCheck)) {
+        return entities.extensions.get(entityToCheck).elementPaths;
+      }
+      if (entities.resources.has(entityToCheck)) {
+        return entities.resources.get(entityToCheck).elementPaths;
+      }
+      if (entities.logicals.has(entityToCheck)) {
+        return entities.logicals.get(entityToCheck).elementPaths;
+      }
+    }
+    return null;
+  }
+
   public async updateFhirEntities(): Promise<void> {
     if (this.cachePath && path.isAbsolute(this.cachePath)) {
       let fhirPackage = 'hl7.fhir.r4.core';
@@ -266,13 +318,13 @@ export class FshCompletionProvider implements CompletionItemProvider {
   public async makeItemsFromDependencies(
     dependencies: { packageId: string; version: string }[]
   ): Promise<FshCompletionProvider['fhirEntities']> {
-    const updatedEntities: FshCompletionProvider['fhirEntities'] = {};
+    const updatedEntities: FshCompletionProvider['fhirEntities'] = new Map();
     await Promise.all(
       dependencies.map(async dependency => {
         const packageKey = `${dependency.packageId}#${dependency.version}`;
-        if (this.cachedFhirEntities[packageKey]) {
+        if (this.cachedFhirEntities.has(packageKey)) {
           // we already have it. assume it doesn't need to be reloaded
-          updatedEntities[packageKey] = this.cachedFhirEntities[packageKey];
+          updatedEntities.set(packageKey, this.cachedFhirEntities.get(packageKey));
           return;
         }
         try {
@@ -286,12 +338,12 @@ export class FshCompletionProvider implements CompletionItemProvider {
           );
           const packageFiles = await workspace.fs.readDirectory(Uri.file(packagePath));
           const packageEntities: EntitySet = {
-            profiles: [],
-            resources: [],
-            extensions: [],
-            logicals: [],
-            codeSystems: [],
-            valueSets: []
+            profiles: new Map(),
+            resources: new Map(),
+            extensions: new Map(),
+            logicals: new Map(),
+            codeSystems: new Map(),
+            valueSets: new Map()
           };
           await Promise.all(
             packageFiles.map(async ([fileName, type]) => {
@@ -303,55 +355,74 @@ export class FshCompletionProvider implements CompletionItemProvider {
                   const decoder = new TextDecoder();
                   const decodedContents = decoder.decode(rawContents);
                   const parsedContents = JSON.parse(decodedContents);
-                  const items: CompletionItem[] = [];
+                  const items: EnhancedCompletionItem[] = [];
                   if (parsedContents.name) {
                     items.push(new CompletionItem(parsedContents.name));
                   }
                   if (parsedContents.id && parsedContents.name !== parsedContents.id) {
                     items.push(new CompletionItem(parsedContents.id));
                   }
+                  let elementPaths: string[];
+                  if (parsedContents.snapshot?.element?.length > 0) {
+                    elementPaths = parsedContents.snapshot.element.map((el: any) => el.path);
+                  }
                   switch (this.determineEntityType(parsedContents)) {
                     case 'Profile':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Profile`;
-                        packageEntities.profiles.push(item);
+                        if (elementPaths) {
+                          item.elementPaths = elementPaths;
+                        }
+                        packageEntities.profiles.set(item.label, item);
                       });
                       break;
                     case 'Resource':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Resource`;
-                        packageEntities.resources.push(item);
+                        if (elementPaths) {
+                          item.elementPaths = elementPaths;
+                        }
+                        packageEntities.resources.set(item.label, item);
                       });
                       break;
                     case 'Type':
                       // a Type, such as Quantity, is allowed in the same contexts as a Resource
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Type`;
-                        packageEntities.resources.push(item);
+                        if (elementPaths) {
+                          item.elementPaths = elementPaths;
+                        }
+                        packageEntities.resources.set(item.label, item);
                       });
                       break;
                     case 'Extension':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Extension`;
-                        packageEntities.extensions.push(item);
+                        if (elementPaths) {
+                          item.elementPaths = elementPaths;
+                        }
+                        packageEntities.extensions.set(item.label, item);
                       });
                       break;
                     case 'Logical':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Logical`;
-                        packageEntities.logicals.push(item);
+                        if (elementPaths) {
+                          item.elementPaths = elementPaths;
+                        }
+                        packageEntities.logicals.set(item.label, item);
                       });
                       break;
                     case 'CodeSystem':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} CodeSystem`;
-                        packageEntities.codeSystems.push(item);
+                        packageEntities.codeSystems.set(item.label, item);
                       });
                       break;
                     case 'ValueSet':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} ValueSet`;
-                        packageEntities.valueSets.push(item);
+                        packageEntities.valueSets.set(item.label, item);
                       });
                       break;
                   }
@@ -362,8 +433,8 @@ export class FshCompletionProvider implements CompletionItemProvider {
               }
             })
           );
-          this.cachedFhirEntities[packageKey] = packageEntities;
-          updatedEntities[packageKey] = packageEntities;
+          this.cachedFhirEntities.set(packageKey, packageEntities);
+          updatedEntities.set(packageKey, packageEntities);
         } catch (err) {
           window.showInformationMessage(
             `Could not load definition information for package ${dependency.packageId}#${dependency.version}`
@@ -436,34 +507,34 @@ export class FshCompletionProvider implements CompletionItemProvider {
   public getFhirItems(allowedTypes: EntityType[]): CompletionItem[] {
     const fhirItems: CompletionItem[] = [];
     if (allowedTypes.includes('Profile')) {
-      Object.values(this.fhirEntities)
+      [...this.fhirEntities.values()]
         .map(fhirPackage => fhirPackage.profiles)
-        .forEach(profiles => fhirItems.push(...profiles));
+        .forEach(profiles => fhirItems.push(...profiles.values()));
     }
     if (allowedTypes.includes('Resource')) {
-      Object.values(this.fhirEntities)
+      [...this.fhirEntities.values()]
         .map(fhirPackage => fhirPackage.resources)
-        .forEach(resources => fhirItems.push(...resources));
+        .forEach(resources => fhirItems.push(...resources.values()));
     }
     if (allowedTypes.includes('Extension')) {
-      Object.values(this.fhirEntities)
+      [...this.fhirEntities.values()]
         .map(fhirPackage => fhirPackage.extensions)
-        .forEach(extensions => fhirItems.push(...extensions));
+        .forEach(extensions => fhirItems.push(...extensions.values()));
     }
     if (allowedTypes.includes('Logical')) {
-      Object.values(this.fhirEntities)
+      [...this.fhirEntities.values()]
         .map(fhirPackage => fhirPackage.logicals)
-        .forEach(logicals => fhirItems.push(...logicals));
+        .forEach(logicals => fhirItems.push(...logicals.values()));
     }
     if (allowedTypes.includes('CodeSystem')) {
-      Object.values(this.fhirEntities)
+      [...this.fhirEntities.values()]
         .map(fhirPackage => fhirPackage.codeSystems)
-        .forEach(codeSystems => fhirItems.push(...codeSystems));
+        .forEach(codeSystems => fhirItems.push(...codeSystems.values()));
     }
     if (allowedTypes.includes('ValueSet')) {
-      Object.values(this.fhirEntities)
+      [...this.fhirEntities.values()]
         .map(fhirPackage => fhirPackage.valueSets)
-        .forEach(valueSets => fhirItems.push(...valueSets));
+        .forEach(valueSets => fhirItems.push(...valueSets.values()));
     }
     return fhirItems;
   }
