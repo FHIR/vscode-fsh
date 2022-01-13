@@ -747,6 +747,48 @@ suite('FshCompletionProvider', () => {
     });
   });
 
+  suite('#getPathItems', () => {
+    // we'll use a partial list of paths from Patient
+    const patientBasePaths = [
+      'Patient',
+      'Patient.id',
+      'Patient.name',
+      'Patient.name.given',
+      'Patient.name.family',
+      'Patient.photo',
+      'Patient.contact',
+      'Patient.contact.relationship',
+      'Patient.contact.name',
+      'Patient.contact.name.given',
+      'Patient.contact.name.family'
+    ];
+
+    test('should get path items that could appear as the first part of the path', () => {
+      const result = instance.getPathItems([], patientBasePaths);
+      assert.lengthOf(result, 4);
+      assert.includeDeepMembers(result, [
+        new vscode.CompletionItem('id'),
+        new vscode.CompletionItem('name'),
+        new vscode.CompletionItem('photo'),
+        new vscode.CompletionItem('contact')
+      ]);
+    });
+
+    test('should get path items that could appear after an existing path segment', () => {
+      const result = instance.getPathItems(['contact'], patientBasePaths);
+      assert.lengthOf(result, 2);
+      assert.includeDeepMembers(result, [
+        new vscode.CompletionItem('relationship'),
+        new vscode.CompletionItem('name')
+      ]);
+    });
+
+    test('should get no items when the existing path segments are not present', () => {
+      const result = instance.getPathItems(['con'], patientBasePaths);
+      assert.lengthOf(result, 0);
+    });
+  });
+
   suite('#updateFhirEntities', () => {
     const defaultConfig = [
       'id: cookie.mountain',

@@ -244,6 +244,23 @@ export class FshCompletionProvider implements CompletionItemProvider {
     return null;
   }
 
+  public getPathItems(existingPath: string[], basePaths: string[]): CompletionItem[] {
+    const matchingPaths = basePaths
+      .map(path => {
+        const pathParts = path.split('.').slice(1);
+        if (
+          existingPath.length + 1 === pathParts.length &&
+          existingPath.every((p, i) => p === pathParts[i])
+        ) {
+          return pathParts[pathParts.length - 1];
+        } else {
+          return null;
+        }
+      })
+      .filter(pathEnd => pathEnd != null);
+    return matchingPaths.map(path => new CompletionItem(path));
+  }
+
   public async updateFhirEntities(): Promise<void> {
     if (this.cachePath && path.isAbsolute(this.cachePath)) {
       let fhirPackage = 'hl7.fhir.r4.core';
@@ -546,15 +563,27 @@ export class FshCompletionProvider implements CompletionItemProvider {
     return new Promise((resolve, reject) => {
       try {
         this.definitionProvider.handleDirtyFiles();
-        const allowedInfo = this.getAllowedTypesAndExtraNames(document, position);
-        if (allowedInfo != null) {
-          const { allowedTypes, extraNames } = allowedInfo;
+        const keywordInfo = this.getAllowedTypesAndExtraNames(document, position);
+        // are we completing a keyword?
+        if (keywordInfo != null) {
+          const { allowedTypes, extraNames } = keywordInfo;
           const fhirItems = this.getFhirItems(allowedTypes);
           const names = this.getEntityItems(allowedTypes);
           resolve(names.concat(extraNames, fhirItems));
-        } else {
-          reject();
+          return;
         }
+
+        const pathInfo = this.getElementPathInformation(document, position);
+        // are we completing a path?
+        if (pathInfo != null) {
+          const basePaths = this.getBaseDefinitionElements(pathInfo.baseDefinition);
+          const pathItems = this.getPathItems(pathInfo.existingPath, basePaths);
+          resolve(pathItems);
+          return;
+        }
+
+        // if we're not completing either of those, we don't have anything useful to say.
+        reject();
       } catch (err) {
         reject(err);
       }
