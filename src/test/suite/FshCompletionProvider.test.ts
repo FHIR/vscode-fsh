@@ -5,7 +5,11 @@ import * as vscode from 'vscode';
 import path from 'path';
 import os from 'os';
 
-import { FshCompletionProvider, EnhancedCompletionItem } from '../../FshCompletionProvider';
+import {
+  FshCompletionProvider,
+  EnhancedCompletionItem,
+  ElementInfo
+} from '../../FshCompletionProvider';
 import { FshDefinitionProvider } from '../../FshDefinitionProvider';
 
 chai.use(spies);
@@ -511,30 +515,51 @@ suite('FshCompletionProvider', () => {
       const coreDomainResource: EnhancedCompletionItem = new vscode.CompletionItem(
         'DomainResource'
       );
-      coreDomainResource.elementPaths = ['DomainResource', 'DomainResource.id'];
+      coreDomainResource.elements = [
+        { path: 'id', types: ['http://hl7.org/fhirpath/System.String'], children: [] }
+      ];
       const coreBase: EnhancedCompletionItem = new vscode.CompletionItem('Base');
-      coreBase.elementPaths = ['Base'];
+      coreBase.elements = [];
       const coreExtension: EnhancedCompletionItem = new vscode.CompletionItem('Extension');
-      coreExtension.elementPaths = ['Extension', 'Extension.id', 'Extension.extension'];
+      coreExtension.elements = [
+        { path: 'id', types: ['http://hl7.org/fhirpath/System.String'], children: [] },
+        { path: 'extension', types: ['Extension'], children: [] }
+      ];
       // then, some of our own custom packages
       const smallProfile: EnhancedCompletionItem = new vscode.CompletionItem('SomeProfile');
-      smallProfile.elementPaths = ['Something', 'Something.name', 'Something.title'];
+      // when storing profiles, we don't store elements, just the baseDefinition,
+      // which comes from the structure definition's type field.
+      smallProfile.baseDefinition = 'SmallResource';
       const smallResource: EnhancedCompletionItem = new vscode.CompletionItem('SmallResource');
-      smallResource.elementPaths = [
-        'Small',
-        'Small.height',
-        'Small.width',
-        'Small.material',
-        'Small.material.description'
+      smallResource.elements = [
+        { path: 'height', types: ['Quantity'], children: [] },
+        { path: 'width', types: ['Quantity'], children: [] },
+        {
+          path: 'material',
+          types: ['BackboneElement'],
+          children: [{ path: 'description', types: ['string'], children: [] }]
+        }
       ];
       const largeResource: EnhancedCompletionItem = new vscode.CompletionItem('LargeResource');
-      largeResource.elementPaths = ['Large', 'Large.big', 'Large.big.huge'];
+      largeResource.elements = [
+        {
+          path: 'big',
+          types: ['BackboneElement'],
+          children: [{ path: 'huge', types: ['boolean'], children: [] }]
+        }
+      ];
       const regularExtension: EnhancedCompletionItem = new vscode.CompletionItem(
         'RegularExtension'
       );
-      regularExtension.elementPaths = ['Extension', 'Extension.value[x]', 'Extension.extension'];
+      regularExtension.elements = [
+        { path: 'value[x]', types: ['string', 'boolean', 'Quantity'], children: [] },
+        { path: 'extension', types: ['Extension'], children: [] }
+      ];
       const someLogical: EnhancedCompletionItem = new vscode.CompletionItem('SomeLogical');
-      someLogical.elementPaths = ['SomeLogical', 'SomeLogical.question', 'SomeLogical.answer'];
+      someLogical.elements = [
+        { path: 'question', types: ['string'], children: [] },
+        { path: 'answer', types: ['string'], children: [] }
+      ];
       const someCodeSystem: EnhancedCompletionItem = new vscode.CompletionItem('SomeCS');
       const someValueSet: EnhancedCompletionItem = new vscode.CompletionItem('SomeVS');
 
@@ -669,102 +694,182 @@ suite('FshCompletionProvider', () => {
       definitionInstance.scanAll();
     });
 
-    test('should get element paths for a FHIR profile', () => {
-      const elementPaths = instance.getBaseDefinitionElements('SomeProfile');
-      assert.deepEqual(elementPaths, ['Something', 'Something.name', 'Something.title']);
+    test('should get elements for a FHIR profile', () => {
+      const elements = instance.getBaseDefinitionElements('SomeProfile');
+      // SomeProfile is a profile of SmallResource
+      assert.deepEqual(elements, [
+        { path: 'height', types: ['Quantity'], children: [] },
+        { path: 'width', types: ['Quantity'], children: [] },
+        {
+          path: 'material',
+          types: ['BackboneElement'],
+          children: [{ path: 'description', types: ['string'], children: [] }]
+        }
+      ]);
     });
 
-    test('should get element paths for a FHIR resource', () => {
-      const elementPaths = instance.getBaseDefinitionElements('LargeResource');
-      assert.deepEqual(elementPaths, ['Large', 'Large.big', 'Large.big.huge']);
+    test('should get elements for a FHIR resource', () => {
+      const elements = instance.getBaseDefinitionElements('LargeResource');
+      assert.deepEqual(elements, [
+        {
+          path: 'big',
+          types: ['BackboneElement'],
+          children: [{ path: 'huge', types: ['boolean'], children: [] }]
+        }
+      ]);
     });
 
-    test('should get element paths for a FHIR extension', () => {
-      const elementPaths = instance.getBaseDefinitionElements('RegularExtension');
-      assert.deepEqual(elementPaths, ['Extension', 'Extension.value[x]', 'Extension.extension']);
+    test('should get elements for a FHIR extension', () => {
+      const elements = instance.getBaseDefinitionElements('RegularExtension');
+      assert.deepEqual(elements, [
+        { path: 'value[x]', types: ['string', 'boolean', 'Quantity'], children: [] },
+        { path: 'extension', types: ['Extension'], children: [] }
+      ]);
     });
 
-    test('should get element paths for a FHIR logical model', () => {
-      const elementPaths = instance.getBaseDefinitionElements('SomeLogical');
-      assert.deepEqual(elementPaths, ['SomeLogical', 'SomeLogical.question', 'SomeLogical.answer']);
+    test('should get elements for a FHIR logical model', () => {
+      const elements = instance.getBaseDefinitionElements('SomeLogical');
+      assert.deepEqual(elements, [
+        { path: 'question', types: ['string'], children: [] },
+        { path: 'answer', types: ['string'], children: [] }
+      ]);
     });
 
     test('should get null for a FHIR code system', () => {
-      const elementPaths = instance.getBaseDefinitionElements('SomeCS');
-      assert.isNull(elementPaths);
+      const elements = instance.getBaseDefinitionElements('SomeCS');
+      assert.isNull(elements);
     });
 
     test('should get null for a FHIR value set', () => {
-      const elementPaths = instance.getBaseDefinitionElements('SomeVS');
-      assert.isNull(elementPaths);
+      const elements = instance.getBaseDefinitionElements('SomeVS');
+      assert.isNull(elements);
     });
 
     test('should get null when no entity with the name exists', () => {
-      const elementPaths = instance.getBaseDefinitionElements('NothingHere');
-      assert.isNull(elementPaths);
+      const elements = instance.getBaseDefinitionElements('NothingHere');
+      assert.isNull(elements);
     });
 
-    test('should get element paths for a FSH definition with a FHIR parent', () => {
-      const elementPaths = instance.getBaseDefinitionElements('MyLargeProfile');
+    test('should get elements for a FSH definition with a FHIR parent', () => {
+      const elements = instance.getBaseDefinitionElements('MyLargeProfile');
       // MyLargeProfile's parent is LargeResource
-      assert.deepEqual(elementPaths, ['Large', 'Large.big', 'Large.big.huge']);
+      assert.deepEqual(elements, [
+        {
+          path: 'big',
+          types: ['BackboneElement'],
+          children: [{ path: 'huge', types: ['boolean'], children: [] }]
+        }
+      ]);
     });
 
-    test('should get element paths for a FSH definition with a FSH parent and FHIR ancestor', () => {
-      const elementPaths = instance.getBaseDefinitionElements('PopQuiz');
+    test('should get elements for a FSH definition with a FSH parent and FHIR ancestor', () => {
+      const elements = instance.getBaseDefinitionElements('PopQuiz');
       // PopQuiz's parent is QuizShow. QuizShow's parent is SomeLogical
-      assert.deepEqual(elementPaths, ['SomeLogical', 'SomeLogical.question', 'SomeLogical.answer']);
+      assert.deepEqual(elements, [
+        { path: 'question', types: ['string'], children: [] },
+        { path: 'answer', types: ['string'], children: [] }
+      ]);
     });
 
-    test('should get element paths for a FSH instance definition that is an instance of another FSH definition', () => {
-      const elementPaths = instance.getBaseDefinitionElements('PopQuizForToday');
+    test('should get elements for a FSH instance definition that is an instance of another FSH definition', () => {
+      const elements = instance.getBaseDefinitionElements('PopQuizForToday');
       // PopQuizForToday is an instance of PopQuiz
-      assert.deepEqual(elementPaths, ['SomeLogical', 'SomeLogical.question', 'SomeLogical.answer']);
+      assert.deepEqual(elements, [
+        { path: 'question', types: ['string'], children: [] },
+        { path: 'answer', types: ['string'], children: [] }
+      ]);
     });
 
     test('should get null for a FSH definition with a FSH parent and no ancestor which is a defined FHIR entity', () => {
-      const elementPaths = instance.getBaseDefinitionElements('MysteryEntity');
+      const elements = instance.getBaseDefinitionElements('MysteryEntity');
       // MysteryEntity's parent is UnknownProfile. UnknownProfile's parent is SomeNonexistentResource, which doesn't exist
-      assert.isNull(elementPaths);
+      assert.isNull(elements);
     });
 
-    test('should get element paths for FHIR Extension when the named entity is a FSH Extension with no specified parent', () => {
-      const elementPaths = instance.getBaseDefinitionElements('MyNewExtension');
+    test('should get elements for FHIR Extension when the named entity is a FSH Extension with no specified parent', () => {
+      const elements = instance.getBaseDefinitionElements('MyNewExtension');
       // MyNewExtension has no parent, so it defaults to Extension
-      assert.deepEqual(elementPaths, ['Extension', 'Extension.id', 'Extension.extension']);
+      assert.deepEqual(elements, [
+        { path: 'id', types: ['http://hl7.org/fhirpath/System.String'], children: [] },
+        { path: 'extension', types: ['Extension'], children: [] }
+      ]);
     });
 
-    test('should get element paths for FHIR DomainResource when the named entity is a FSH Resource with no specified parent', () => {
-      const elementPaths = instance.getBaseDefinitionElements('MyNewResource');
+    test('should get elements for FHIR DomainResource when the named entity is a FSH Resource with no specified parent', () => {
+      const elements = instance.getBaseDefinitionElements('MyNewResource');
       // MyNewResource has no parent, so it defaults to DomainResource
-      assert.deepEqual(elementPaths, ['DomainResource', 'DomainResource.id']);
+      assert.deepEqual(elements, [
+        { path: 'id', types: ['http://hl7.org/fhirpath/System.String'], children: [] }
+      ]);
     });
 
-    test('should get element paths for FHIR Base when the named entity is a FSH Logical with no specified parent', () => {
-      const elementPaths = instance.getBaseDefinitionElements('MyNewLogical');
+    test('should get elements for FHIR Base when the named entity is a FSH Logical with no specified parent', () => {
+      const elements = instance.getBaseDefinitionElements('MyNewLogical');
       // MyNewLogical has no parent, so it defaults to Base
-      assert.deepEqual(elementPaths, ['Base']);
+      assert.lengthOf(elements, 0);
     });
   });
 
   suite('#getPathItems', () => {
-    // we'll use a partial list of paths from Patient
-    const patientBasePaths = [
-      'Patient',
-      'Patient.id',
-      'Patient.name',
-      'Patient.name.given',
-      'Patient.name.family',
-      'Patient.photo',
-      'Patient.contact',
-      'Patient.contact.relationship',
-      'Patient.contact.name',
-      'Patient.contact.name.given',
-      'Patient.contact.name.family'
+    // we'll use a partial list of elements from Patient
+    const patientElements: ElementInfo[] = [
+      {
+        path: 'id',
+        types: ['http://hl7.org/fhirpath/System.String'],
+        children: []
+      },
+      {
+        path: 'name',
+        types: ['HumanName'],
+        children: [
+          {
+            path: 'given',
+            types: ['string'],
+            children: []
+          },
+          {
+            path: 'family',
+            types: ['string'],
+            children: []
+          }
+        ]
+      },
+      {
+        path: 'photo',
+        types: ['Attachment'],
+        children: []
+      },
+      {
+        path: 'contact',
+        types: ['BackboneElement'],
+        children: [
+          {
+            path: 'relationship',
+            types: ['CodeableConcept'],
+            children: []
+          },
+          {
+            path: 'name',
+            types: ['HumanName'],
+            children: [
+              {
+                path: 'given',
+                types: ['string'],
+                children: []
+              },
+              {
+                path: 'family',
+                types: ['string'],
+                children: []
+              }
+            ]
+          }
+        ]
+      }
     ];
 
     test('should get path items that could appear as the first part of the path', () => {
-      const result = instance.getPathItems([], patientBasePaths);
+      const result = instance.getPathItems([], patientElements);
       assert.lengthOf(result, 4);
       assert.includeDeepMembers(result, [
         new vscode.CompletionItem('id'),
@@ -775,7 +880,7 @@ suite('FshCompletionProvider', () => {
     });
 
     test('should get path items that could appear after an existing path segment', () => {
-      const result = instance.getPathItems(['contact'], patientBasePaths);
+      const result = instance.getPathItems(['contact'], patientElements);
       assert.lengthOf(result, 2);
       assert.includeDeepMembers(result, [
         new vscode.CompletionItem('relationship'),
@@ -784,7 +889,7 @@ suite('FshCompletionProvider', () => {
     });
 
     test('should get no items when the existing path segments are not present', () => {
-      const result = instance.getPathItems(['con'], patientBasePaths);
+      const result = instance.getPathItems(['con'], patientElements);
       assert.lengthOf(result, 0);
     });
   });
@@ -942,8 +1047,10 @@ suite('FshCompletionProvider', () => {
       const items = await instance.makeItemsFromDependencies(dependencies);
       assert.hasAllKeys(items, ['some.other.package#1.0.1', 'hl7.fhir.r4.core#4.0.1']);
 
-      const expectedProfile = new vscode.CompletionItem('MyProfile');
+      // the completion item for a profile should come with a baseDefinition
+      const expectedProfile: EnhancedCompletionItem = new vscode.CompletionItem('MyProfile');
       expectedProfile.detail = 'some.other.package Profile';
+      expectedProfile.baseDefinition = 'MyResource';
       const expectedResource = new vscode.CompletionItem('MyResource');
       expectedResource.detail = 'hl7.fhir.r4.core Resource';
       const expectedExtension = new vscode.CompletionItem('MyExtension');
@@ -1037,6 +1144,229 @@ suite('FshCompletionProvider', () => {
       assert.equal(items.get('very.good.package#1.0.1').valueSets.size, 0);
       // since we got these items from the cache, we shouldn't have read any files
       expect(readFileSpy).to.have.been.called.exactly(0);
+    });
+  });
+
+  suite('#buildElementsFromSnapshot', () => {
+    test('should build elements from a simple snapshot', () => {
+      const snapshot: any[] = [
+        {
+          path: 'Observation'
+        },
+        {
+          path: 'Observation.id',
+          type: [
+            {
+              code: 'http://hl7.org/fhirpath/System.String',
+              extension: [
+                {
+                  url: 'http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type',
+                  valueUri: 'id'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          path: 'Observation.identifier',
+          type: [
+            {
+              code: 'Identifier'
+            }
+          ]
+        },
+        {
+          path: 'Observation.basedOn',
+          type: [
+            {
+              code: 'Reference',
+              targetProfile: [
+                'http://hl7.org/fhir/StructureDefinition/CarePlan',
+                'http://hl7.org/fhir/StructureDefinition/DeviceRequest',
+                'http://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation',
+                'http://hl7.org/fhir/StructureDefinition/MedicationRequest',
+                'http://hl7.org/fhir/StructureDefinition/NutritionOrder',
+                'http://hl7.org/fhir/StructureDefinition/ServiceRequest'
+              ]
+            }
+          ]
+        }
+      ];
+      const elements = instance.buildElementsFromSnapshot(snapshot);
+      assert.lengthOf(elements, 3);
+      // result elements should be in the same order as the the snapshot
+      const expectedElements: ElementInfo[] = [
+        {
+          path: 'id',
+          types: ['http://hl7.org/fhirpath/System.String'],
+          children: []
+        },
+        {
+          path: 'identifier',
+          types: ['Identifier'],
+          children: []
+        },
+        {
+          path: 'basedOn',
+          types: ['Reference'],
+          children: []
+        }
+      ];
+      assert.deepEqual(elements, expectedElements);
+    });
+
+    test('should build elements from a snapshot with multiple levels of elements', () => {
+      const snapshot: any[] = [
+        {
+          path: 'Observation'
+        },
+        {
+          path: 'Observation.referenceRange',
+          type: [
+            {
+              code: 'BackboneElement'
+            }
+          ]
+        },
+        {
+          path: 'Observation.referenceRange.extension',
+          type: [
+            {
+              code: 'Extension'
+            }
+          ]
+        },
+        {
+          path: 'Observation.referenceRange.low',
+          type: [
+            {
+              code: 'Quantity',
+              profile: ['http://hl7.org/fhir/StructureDefinition/SimpleQuantity']
+            }
+          ]
+        },
+        {
+          path: 'Observation.referenceRange.high',
+          type: [
+            {
+              code: 'Quantity',
+              profile: ['http://hl7.org/fhir/StructureDefinition/SimpleQuantity']
+            }
+          ]
+        },
+        {
+          path: 'Observation.hasMember',
+          type: [
+            {
+              code: 'Reference',
+              targetProfile: [
+                'http://hl7.org/fhir/StructureDefinition/Observation',
+                'http://hl7.org/fhir/StructureDefinition/QuestionnaireResponse',
+                'http://hl7.org/fhir/StructureDefinition/MolecularSequence'
+              ]
+            }
+          ]
+        }
+      ];
+      const elements = instance.buildElementsFromSnapshot(snapshot);
+      assert.lengthOf(elements, 2);
+      const expectedElements: ElementInfo[] = [
+        {
+          path: 'referenceRange',
+          types: ['BackboneElement'],
+          children: [
+            {
+              path: 'extension',
+              types: ['Extension'],
+              children: []
+            },
+            {
+              path: 'low',
+              types: ['Quantity'],
+              children: []
+            },
+            {
+              path: 'high',
+              types: ['Quantity'],
+              children: []
+            }
+          ]
+        },
+        {
+          path: 'hasMember',
+          types: ['Reference'],
+          children: []
+        }
+      ];
+      assert.deepEqual(elements, expectedElements);
+    });
+
+    test('should only include an element once when that element has defined slices', () => {
+      // a slice will have the same path but a different id
+      const snapshot: any[] = [
+        {
+          path: 'Observation'
+        },
+        {
+          path: 'Observation.component',
+          id: 'Observation.component',
+          type: [
+            {
+              code: 'BackboneElement'
+            }
+          ]
+        },
+        {
+          path: 'Observation.component.code',
+          id: 'Observation.component.code',
+          type: [
+            {
+              code: 'CodeableConcept'
+            }
+          ]
+        },
+        {
+          path: 'Observation.component',
+          id: 'Observation.component:systolic',
+          type: [
+            {
+              code: 'BackboneElement'
+            }
+          ]
+        },
+        {
+          path: 'Observation.component',
+          id: 'Observation.component:diastolic',
+          type: [
+            {
+              code: 'BackboneElement'
+            }
+          ]
+        }
+      ];
+      const elements = instance.buildElementsFromSnapshot(snapshot);
+      assert.lengthOf(elements, 1);
+      const expectedElements: ElementInfo[] = [
+        {
+          path: 'component',
+          types: ['BackboneElement'],
+          children: [
+            {
+              path: 'code',
+              types: ['CodeableConcept'],
+              children: []
+            }
+          ]
+        }
+      ];
+      assert.deepEqual(elements, expectedElements);
+    });
+
+    test('should return an empty list if none of the snapshot elements have paths', () => {
+      // this should never happen unless the input is very unusual
+      const snapshot: any[] = [{ id: 'Unusual' }, { id: 'Unusual.element' }];
+      const elements = instance.buildElementsFromSnapshot(snapshot);
+      assert.lengthOf(elements, 0);
     });
   });
 

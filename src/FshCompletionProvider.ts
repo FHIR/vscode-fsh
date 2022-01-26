@@ -24,7 +24,16 @@ export type FhirContents = {
   derivation?: string;
 };
 
-export type EnhancedCompletionItem = CompletionItem & { elementPaths?: string[] };
+export type ElementInfo = {
+  path: string;
+  types: string[];
+  children: ElementInfo[];
+};
+
+export type EnhancedCompletionItem = CompletionItem & {
+  elements?: ElementInfo[];
+  baseDefinition?: string;
+};
 
 type DependencyDetails = {
   id: string;
@@ -190,7 +199,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
     return null;
   }
 
-  public getBaseDefinitionElements(entityName: string): string[] {
+  public getBaseDefinitionElements(entityName: string): ElementInfo[] {
     // is the entity something that is locally defined?
     // if so, look up parents until we get something not locally defined,
     // or until we detect a circular reference.
@@ -227,38 +236,53 @@ export class FshCompletionProvider implements CompletionItemProvider {
       }
     }
     // is the entity present in the dependencies' entities?
+    // we may have to search twice, if we find a Profile
+    let originalType: string;
     for (const [, entities] of this.fhirEntities) {
       if (entities.profiles.has(entityToCheck)) {
-        return entities.profiles.get(entityToCheck).elementPaths;
+        originalType = entities.profiles.get(entityToCheck).baseDefinition;
+        break;
       }
       if (entities.extensions.has(entityToCheck)) {
-        return entities.extensions.get(entityToCheck).elementPaths;
+        return entities.extensions.get(entityToCheck).elements;
       }
       if (entities.resources.has(entityToCheck)) {
-        return entities.resources.get(entityToCheck).elementPaths;
+        return entities.resources.get(entityToCheck).elements;
       }
       if (entities.logicals.has(entityToCheck)) {
-        return entities.logicals.get(entityToCheck).elementPaths;
+        return entities.logicals.get(entityToCheck).elements;
+      }
+    }
+    if (originalType != null) {
+      // search again, but don't include Profiles
+      for (const [, entities] of this.fhirEntities) {
+        if (entities.extensions.has(originalType)) {
+          return entities.extensions.get(originalType).elements;
+        }
+        if (entities.resources.has(originalType)) {
+          return entities.resources.get(originalType).elements;
+        }
+        if (entities.logicals.has(originalType)) {
+          return entities.logicals.get(originalType).elements;
+        }
       }
     }
     return null;
   }
 
-  public getPathItems(existingPath: string[], basePaths: string[]): CompletionItem[] {
-    const matchingPaths = basePaths
-      .map(path => {
-        const pathParts = path.split('.').slice(1);
-        if (
-          existingPath.length + 1 === pathParts.length &&
-          existingPath.every((p, i) => p === pathParts[i])
-        ) {
-          return pathParts[pathParts.length - 1];
-        } else {
-          return null;
-        }
-      })
-      .filter(pathEnd => pathEnd != null);
-    return matchingPaths.map(path => new CompletionItem(path));
+  public getPathItems(existingPath: string[], baseElements: ElementInfo[]): CompletionItem[] {
+    let targetLevel = baseElements;
+    for (const pathPart of existingPath) {
+      targetLevel = targetLevel.find(element => element.path === pathPart)?.children;
+      if (targetLevel == null) {
+        return [];
+      }
+    }
+    if (targetLevel) {
+      return targetLevel.map(element => new CompletionItem(element.path));
+    } else {
+      return [];
+    }
   }
 
   public async updateFhirEntities(): Promise<void> {
@@ -379,25 +403,21 @@ export class FshCompletionProvider implements CompletionItemProvider {
                   if (parsedContents.id && parsedContents.name !== parsedContents.id) {
                     items.push(new CompletionItem(parsedContents.id));
                   }
-                  let elementPaths: string[];
-                  if (parsedContents.snapshot?.element?.length > 0) {
-                    elementPaths = parsedContents.snapshot.element.map((el: any) => el.path);
-                  }
                   switch (this.determineEntityType(parsedContents)) {
                     case 'Profile':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Profile`;
-                        if (elementPaths) {
-                          item.elementPaths = elementPaths;
-                        }
+                        item.baseDefinition = parsedContents.type;
                         packageEntities.profiles.set(item.label, item);
                       });
                       break;
                     case 'Resource':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Resource`;
-                        if (elementPaths) {
-                          item.elementPaths = elementPaths;
+                        if (parsedContents.snapshot?.element?.length > 0) {
+                          item.elements = this.buildElementsFromSnapshot(
+                            parsedContents.snapshot.element
+                          );
                         }
                         packageEntities.resources.set(item.label, item);
                       });
@@ -406,8 +426,10 @@ export class FshCompletionProvider implements CompletionItemProvider {
                       // a Type, such as Quantity, is allowed in the same contexts as a Resource
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Type`;
-                        if (elementPaths) {
-                          item.elementPaths = elementPaths;
+                        if (parsedContents.snapshot?.element?.length > 0) {
+                          item.elements = this.buildElementsFromSnapshot(
+                            parsedContents.snapshot.element
+                          );
                         }
                         packageEntities.resources.set(item.label, item);
                       });
@@ -415,8 +437,10 @@ export class FshCompletionProvider implements CompletionItemProvider {
                     case 'Extension':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Extension`;
-                        if (elementPaths) {
-                          item.elementPaths = elementPaths;
+                        if (parsedContents.snapshot?.element?.length > 0) {
+                          item.elements = this.buildElementsFromSnapshot(
+                            parsedContents.snapshot.element
+                          );
                         }
                         packageEntities.extensions.set(item.label, item);
                       });
@@ -424,8 +448,10 @@ export class FshCompletionProvider implements CompletionItemProvider {
                     case 'Logical':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Logical`;
-                        if (elementPaths) {
-                          item.elementPaths = elementPaths;
+                        if (parsedContents.snapshot?.element?.length > 0) {
+                          item.elements = this.buildElementsFromSnapshot(
+                            parsedContents.snapshot.element
+                          );
                         }
                         packageEntities.logicals.set(item.label, item);
                       });
@@ -461,6 +487,28 @@ export class FshCompletionProvider implements CompletionItemProvider {
       })
     );
     return updatedEntities;
+  }
+
+  public buildElementsFromSnapshot(snapshotElements: any[]): ElementInfo[] {
+    const result: ElementInfo[] = [];
+    snapshotElements.forEach(element => {
+      const pathParts: string[] = element.path?.split('.').slice(1) ?? [];
+      if (pathParts.length > 0) {
+        let parent: ElementInfo[] = result;
+        while (pathParts.length > 1 && parent != null) {
+          const parentPart = pathParts.shift();
+          parent = parent.find(p => p.path === parentPart).children;
+        }
+        if (parent != null && !parent.some(existing => existing.path === pathParts[0])) {
+          parent.push({
+            path: pathParts[0],
+            types: element.type?.map((type: any) => type.code) ?? [],
+            children: []
+          });
+        }
+      }
+    });
+    return result;
   }
 
   public determineEntityType(fhirJson: FhirContents): EntityType | 'Type' {
@@ -576,10 +624,12 @@ export class FshCompletionProvider implements CompletionItemProvider {
         const pathInfo = this.getElementPathInformation(document, position);
         // are we completing a path?
         if (pathInfo != null) {
-          const basePaths = this.getBaseDefinitionElements(pathInfo.baseDefinition);
-          const pathItems = this.getPathItems(pathInfo.existingPath, basePaths);
-          resolve(pathItems);
-          return;
+          const baseElements = this.getBaseDefinitionElements(pathInfo.baseDefinition);
+          if (baseElements != null) {
+            const pathItems = this.getPathItems(pathInfo.existingPath, baseElements);
+            resolve(pathItems);
+            return;
+          }
         }
 
         // if we're not completing either of those, we don't have anything useful to say.
