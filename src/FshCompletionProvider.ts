@@ -505,6 +505,23 @@ export class FshCompletionProvider implements CompletionItemProvider {
             types: element.type?.map((type: any) => type.code) ?? [],
             children: []
           });
+          // if this represents a choice element, add the choices in as additional elements
+          // choice elements have a path that ends in [x], and the choices represent the available types.
+          if (pathParts[0].endsWith('[x]') && element.type?.length > 0) {
+            const basePathPart = pathParts[0].slice(0, -3);
+            parent.push(
+              ...element.type.map(
+                (availableType: any) =>
+                  ({
+                    path: `${basePathPart}${availableType.code?.[0].toLocaleUpperCase()}${availableType.code?.slice(
+                      1
+                    )}`,
+                    types: [availableType?.code],
+                    children: []
+                  } as ElementInfo)
+              )
+            );
+          }
         }
       }
     });

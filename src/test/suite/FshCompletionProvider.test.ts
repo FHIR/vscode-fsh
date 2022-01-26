@@ -1362,6 +1362,114 @@ suite('FshCompletionProvider', () => {
       assert.deepEqual(elements, expectedElements);
     });
 
+    test('should build elements from a snapshot with choice elements', () => {
+      const snapshot: any[] = [
+        {
+          path: 'Observation'
+        },
+        {
+          path: 'Observation.value[x]',
+          type: [
+            { code: 'Quantity' },
+            { code: 'CodeableConcept' },
+            { code: 'string' },
+            { code: 'boolean' },
+            { code: 'integer' },
+            { code: 'Range' },
+            { code: 'Ratio' },
+            { code: 'SampledData' },
+            { code: 'time' },
+            { code: 'dateTime' },
+            { code: 'Period' },
+            { code: 'Attachment' }
+          ]
+        }
+      ];
+      const elements = instance.buildElementsFromSnapshot(snapshot);
+      assert.lengthOf(elements, 13);
+      const expectedElements: ElementInfo[] = [
+        {
+          path: 'value[x]',
+          types: [
+            'Quantity',
+            'CodeableConcept',
+            'string',
+            'boolean',
+            'integer',
+            'Range',
+            'Ratio',
+            'SampledData',
+            'time',
+            'dateTime',
+            'Period',
+            'Attachment'
+          ],
+          children: []
+        },
+        {
+          path: 'valueQuantity',
+          types: ['Quantity'],
+          children: []
+        },
+        {
+          path: 'valueCodeableConcept',
+          types: ['CodeableConcept'],
+          children: []
+        },
+        {
+          path: 'valueString',
+          types: ['string'],
+          children: []
+        },
+        {
+          path: 'valueBoolean',
+          types: ['boolean'],
+          children: []
+        },
+        {
+          path: 'valueInteger',
+          types: ['integer'],
+          children: []
+        },
+        {
+          path: 'valueRange',
+          types: ['Range'],
+          children: []
+        },
+        {
+          path: 'valueRatio',
+          types: ['Ratio'],
+          children: []
+        },
+        {
+          path: 'valueSampledData',
+          types: ['SampledData'],
+          children: []
+        },
+        {
+          path: 'valueTime',
+          types: ['time'],
+          children: []
+        },
+        {
+          path: 'valueDateTime',
+          types: ['dateTime'],
+          children: []
+        },
+        {
+          path: 'valuePeriod',
+          types: ['Period'],
+          children: []
+        },
+        {
+          path: 'valueAttachment',
+          types: ['Attachment'],
+          children: []
+        }
+      ];
+      assert.deepEqual(elements, expectedElements);
+    });
+
     test('should return an empty list if none of the snapshot elements have paths', () => {
       // this should never happen unless the input is very unusual
       const snapshot: any[] = [{ id: 'Unusual' }, { id: 'Unusual.element' }];
