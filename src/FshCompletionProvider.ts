@@ -159,7 +159,15 @@ export class FshCompletionProvider implements CompletionItemProvider {
         .trimLeft()
         .split('.')
         .slice(0, -1)
-        .map(pathPart => pathPart.replace(/\[[^\]]+\]/g, ''));
+        .map(pathPart => {
+          // we don't want to remove the [x] from choice elements,
+          // but we do want to remove slice names (which are hopefully not just x)
+          if (pathPart.endsWith('[x]')) {
+            return pathPart;
+          } else {
+            return pathPart.replace(/\[[^\]]+\]$/, '');
+          }
+        });
       const possibleNames = this.definitionProvider.fileNames.get(document.uri.fsPath);
       const possibleEntities = possibleNames.flatMap(name => {
         return this.definitionProvider.nameInformation
@@ -271,17 +279,47 @@ export class FshCompletionProvider implements CompletionItemProvider {
   }
 
   public getPathItems(existingPath: string[], baseElements: ElementInfo[]): CompletionItem[] {
+    let targetElement: ElementInfo;
     let targetLevel = baseElements;
     for (const pathPart of existingPath) {
-      targetLevel = targetLevel.find(element => element.path === pathPart)?.children;
+      // if we are at a leaf element, try to expand based on types
+      if (targetLevel.length === 0 && targetElement.types?.length > 0) {
+        targetElement.children = this.generateItemsFromTypes(targetElement.types);
+        targetLevel = targetElement.children;
+      }
+      targetElement = targetLevel.find(element => element.path === pathPart);
+      targetLevel = targetElement?.children;
       if (targetLevel == null) {
         return [];
       }
     }
     if (targetLevel) {
+      // if we are at a leaf element, try to expand based on types
+      if (targetLevel.length === 0 && targetElement.types?.length > 0) {
+        targetElement.children = this.generateItemsFromTypes(targetElement.types);
+        targetLevel = targetElement.children;
+      }
       return targetLevel.map(element => new CompletionItem(element.path));
     } else {
       return [];
+    }
+  }
+
+  public generateItemsFromTypes(types: string[]): ElementInfo[] {
+    if (types.length === 0) {
+      return [];
+    }
+    const availableElements = types.map((type: string) => this.getBaseDefinitionElements(type));
+    if (availableElements.length === 1) {
+      return availableElements[0];
+    } else {
+      // on an element with multiple types, only include elements that can be used regardless of type
+      const sharedElements = availableElements[0].filter(element => {
+        return availableElements.every(potentialElements => {
+          return potentialElements.some(potential => potential.path === element.path);
+        });
+      });
+      return sharedElements;
     }
   }
 

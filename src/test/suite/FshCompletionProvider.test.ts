@@ -447,6 +447,27 @@ suite('FshCompletionProvider', () => {
       assert.deepEqual(result.existingPath, ['component', 'referenceRange']);
     });
 
+    test('should get path parts for choice elements', async () => {
+      const filePath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'profiles',
+        'profiles2.fsh'
+      );
+      const doc = await vscode.workspace.openTextDocument(filePath);
+      const fileChange = new vscode.WorkspaceEdit();
+      fileChange.insert(
+        vscode.Uri.file(filePath),
+        new vscode.Position(5, 35),
+        `${EOL}${EOL}Profile: ExtraObservation${EOL}Parent: Observation${EOL}* value[x].`
+      );
+      await vscode.workspace.applyEdit(fileChange);
+      definitionInstance.updateNamesFromFile(filePath, doc);
+      const result = instance.getElementPathInformation(doc, new vscode.Position(9, 11));
+      assert.equal(result.baseDefinition, 'Observation');
+      assert.lengthOf(result.existingPath, 1);
+      assert.deepEqual(result.existingPath, ['value[x]']);
+    });
+
     test('should get the default parent for an Extension that does not have a Parent keyword', async () => {
       const filePath = path.join(
         vscode.workspace.workspaceFolders[0].uri.fsPath,
@@ -811,62 +832,83 @@ suite('FshCompletionProvider', () => {
   });
 
   suite('#getPathItems', () => {
-    // we'll use a partial list of elements from Patient
-    const patientElements: ElementInfo[] = [
-      {
-        path: 'id',
-        types: ['http://hl7.org/fhirpath/System.String'],
-        children: []
-      },
-      {
-        path: 'name',
-        types: ['HumanName'],
-        children: [
-          {
-            path: 'given',
-            types: ['string'],
-            children: []
-          },
-          {
-            path: 'family',
-            types: ['string'],
-            children: []
-          }
-        ]
-      },
-      {
-        path: 'photo',
-        types: ['Attachment'],
-        children: []
-      },
-      {
-        path: 'contact',
-        types: ['BackboneElement'],
-        children: [
-          {
-            path: 'relationship',
-            types: ['CodeableConcept'],
-            children: []
-          },
-          {
-            path: 'name',
-            types: ['HumanName'],
-            children: [
-              {
-                path: 'given',
-                types: ['string'],
-                children: []
-              },
-              {
-                path: 'family',
-                types: ['string'],
-                children: []
-              }
-            ]
-          }
-        ]
-      }
-    ];
+    let patientElements: ElementInfo[];
+
+    beforeEach(() => {
+      // we'll need a fake definition for Attachment in our FHIR entities
+      const attachmentDefinition: EnhancedCompletionItem = new vscode.CompletionItem('Attachment');
+      attachmentDefinition.elements = [
+        { path: 'contentType', types: ['code'], children: [] },
+        { path: 'language', types: ['code'], children: [] },
+        { path: 'data', types: ['base64Binary'], children: [] },
+        { path: 'url', types: ['url'], children: [] }
+      ];
+      instance.fhirEntities = new Map();
+      instance.fhirEntities.set('fake-fhir-core-package', {
+        profiles: new Map(),
+        resources: new Map([[attachmentDefinition.label, attachmentDefinition]]),
+        extensions: new Map(),
+        logicals: new Map(),
+        codeSystems: new Map(),
+        valueSets: new Map()
+      });
+      // we'll use a partial list of elements from Patient
+      patientElements = [
+        {
+          path: 'id',
+          types: ['http://hl7.org/fhirpath/System.String'],
+          children: []
+        },
+        {
+          path: 'name',
+          types: ['HumanName'],
+          children: [
+            {
+              path: 'given',
+              types: ['string'],
+              children: []
+            },
+            {
+              path: 'family',
+              types: ['string'],
+              children: []
+            }
+          ]
+        },
+        {
+          path: 'photo',
+          types: ['Attachment'],
+          children: []
+        },
+        {
+          path: 'contact',
+          types: ['BackboneElement'],
+          children: [
+            {
+              path: 'relationship',
+              types: ['CodeableConcept'],
+              children: []
+            },
+            {
+              path: 'name',
+              types: ['HumanName'],
+              children: [
+                {
+                  path: 'given',
+                  types: ['string'],
+                  children: []
+                },
+                {
+                  path: 'family',
+                  types: ['string'],
+                  children: []
+                }
+              ]
+            }
+          ]
+        }
+      ];
+    });
 
     test('should get path items that could appear as the first part of the path', () => {
       const result = instance.getPathItems([], patientElements);
@@ -891,6 +933,21 @@ suite('FshCompletionProvider', () => {
     test('should get no items when the existing path segments are not present', () => {
       const result = instance.getPathItems(['con'], patientElements);
       assert.lengthOf(result, 0);
+    });
+
+    test('should expand types of leaf elements to provide completion items', () => {
+      // Patient.photo has no defined child elements in our tree.
+      // But, we can find the FHIR definition of its type Attachment and create those child elements.
+      assert.lengthOf(patientElements[2].children, 0);
+      const result = instance.getPathItems(['photo'], patientElements);
+      assert.lengthOf(result, 4);
+      assert.includeDeepMembers(result, [
+        new vscode.CompletionItem('contentType'),
+        new vscode.CompletionItem('language'),
+        new vscode.CompletionItem('data'),
+        new vscode.CompletionItem('url')
+      ]);
+      assert.lengthOf(patientElements[2].children, 4);
     });
   });
 
