@@ -345,12 +345,3 @@ function getInstanceOfFromMetadata(metadata: { instanceOf: () => any }[]): strin
     }
   }
 }
-
-// function getUsefulMetadata(
-//   rules: MetadataField[],
-//   metadata: { [key in MetadataField]?: () => any }[]
-// ): { [key in MetadataField]?: string } {
-//   const result: ReturnType<typeof getUsefulMetadata> = {};
-
-//   return result;
-// }
