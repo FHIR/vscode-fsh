@@ -153,7 +153,8 @@ export class FshCompletionProvider implements CompletionItemProvider {
     );
 
     // to offer completion items, the user must have at least typed the space that comes after the asterisk that starts the rule
-    const currentRulePath = currentLine.match(/^( *)\*( +\S*)/);
+    // but, there should not be another space after any non-space characters
+    const currentRulePath = currentLine.match(/^( *)\*( +\S*)$/);
     if (currentRulePath) {
       const existingPath = currentRulePath[2]
         .trimLeft()

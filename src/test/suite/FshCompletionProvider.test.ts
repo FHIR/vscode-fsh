@@ -488,6 +488,25 @@ suite('FshCompletionProvider', () => {
       assert.lengthOf(result.existingPath, 0);
     });
 
+    test('should return null when past the point in a rule where a path would appear', async () => {
+      const filePath = path.join(
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        'profiles',
+        'profiles2.fsh'
+      );
+      const doc = await vscode.workspace.openTextDocument(filePath);
+      const fileChange = new vscode.WorkspaceEdit();
+      fileChange.insert(
+        vscode.Uri.file(filePath),
+        new vscode.Position(5, 35),
+        `${EOL}${EOL}Profile: ExtraObservation${EOL}Parent: Observation${EOL}* insert `
+      );
+      await vscode.workspace.applyEdit(fileChange);
+      definitionInstance.updateNamesFromFile(filePath, doc);
+      const result = instance.getElementPathInformation(doc, new vscode.Position(9, 9));
+      assert.isNull(result);
+    });
+
     test('should return null when writing a rule for something other than a Profile or Extension', async () => {
       const filePath = path.join(
         vscode.workspace.workspaceFolders[0].uri.fsPath,
