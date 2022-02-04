@@ -83,7 +83,7 @@ export function activate(
   const completionProviderInstance = new FshCompletionProvider(definitionProviderInstance);
   context.subscriptions.push(
     languages.registerDefinitionProvider(FSH_MODE, definitionProviderInstance),
-    languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance)
+    languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance, '.')
   );
   commands.registerCommand('extension.openFhir', openFhirDocumentation);
   completionProviderInstance.updateFhirEntities();
