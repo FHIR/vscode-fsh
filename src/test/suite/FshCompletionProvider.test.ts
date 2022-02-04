@@ -595,11 +595,15 @@ suite('FshCompletionProvider', () => {
         { path: 'value[x]', types: ['string', 'boolean', 'Quantity'], children: [] },
         { path: 'extension', types: ['Extension'], children: [] }
       ];
-      const someLogical: EnhancedCompletionItem = new vscode.CompletionItem('SomeLogical');
-      someLogical.elements = [
+      const someNameLogical: EnhancedCompletionItem = new vscode.CompletionItem('SomeLogical');
+      someNameLogical.elements = [
         { path: 'question', types: ['string'], children: [] },
         { path: 'answer', types: ['string'], children: [] }
       ];
+      const someUrlLogical: EnhancedCompletionItem = new vscode.CompletionItem(
+        'https://example.org/fhir/SomeLogical'
+      );
+      someUrlLogical.elements = someNameLogical.elements;
       const someCodeSystem: EnhancedCompletionItem = new vscode.CompletionItem('SomeCS');
       const someValueSet: EnhancedCompletionItem = new vscode.CompletionItem('SomeVS');
 
@@ -630,21 +634,30 @@ suite('FshCompletionProvider', () => {
         profiles: new Map(),
         resources: new Map(),
         extensions: new Map([[regularExtension.label, regularExtension]]),
-        logicals: new Map([[someLogical.label, someLogical]]),
+        logicals: new Map([
+          [someNameLogical.label, someNameLogical],
+          [someUrlLogical.label, someUrlLogical]
+        ]),
         codeSystems: new Map(),
         valueSets: new Map([[someValueSet.label, someValueSet]])
       });
 
-      // set up a small set of FSH entities. we don't need locations for these.
+      // set up a small set of FSH entities. we don't need locations for these, so set them to null
       definitionInstance.nameInformation = new Map();
+      // $LOGICAL is an Alias to https://example.org/fhir/SomeLogical
+      definitionInstance.nameInformation.set('$LOGICAL', [
+        {
+          location: null,
+          type: 'Alias',
+          aliasValue: 'https://example.org/fhir/SomeLogical'
+        }
+      ]);
       // MyLargeProfile is a Profile with parent LargeResource
       definitionInstance.nameInformation.set('MyLargeProfile', [
         {
           location: null,
           type: 'Profile',
-          id: null,
-          parent: 'LargeResource',
-          instanceOf: null
+          parent: 'LargeResource'
         }
       ]);
       // QuizShow is a Logical with parent SomeLogical
@@ -652,9 +665,7 @@ suite('FshCompletionProvider', () => {
         {
           location: null,
           type: 'Logical',
-          id: null,
-          parent: 'SomeLogical',
-          instanceOf: null
+          parent: 'SomeLogical'
         }
       ]);
       // PopQuiz is a Profile with parent QuizShow
@@ -662,9 +673,7 @@ suite('FshCompletionProvider', () => {
         {
           location: null,
           type: 'Profile',
-          id: null,
-          parent: 'QuizShow',
-          instanceOf: null
+          parent: 'QuizShow'
         }
       ]);
       // PopQuizForToday is an Instance of PopQuiz
@@ -672,8 +681,6 @@ suite('FshCompletionProvider', () => {
         {
           location: null,
           type: 'Instance',
-          id: null,
-          parent: null,
           instanceOf: 'PopQuiz'
         }
       ]);
@@ -682,9 +689,7 @@ suite('FshCompletionProvider', () => {
         {
           location: null,
           type: 'Profile',
-          id: null,
-          parent: 'SomeNonexistentResource',
-          instanceOf: null
+          parent: 'SomeNonexistentResource'
         }
       ]);
       // MysteryEntity is a Profile with parent UnknownProfile
@@ -692,9 +697,7 @@ suite('FshCompletionProvider', () => {
         {
           location: null,
           type: 'Profile',
-          id: null,
-          parent: 'UnknownProfile',
-          instanceOf: null
+          parent: 'UnknownProfile'
         }
       ]);
       // entities using the default parent
@@ -702,30 +705,21 @@ suite('FshCompletionProvider', () => {
       definitionInstance.nameInformation.set('MyNewExtension', [
         {
           location: null,
-          type: 'Extension',
-          id: null,
-          parent: null,
-          instanceOf: null
+          type: 'Extension'
         }
       ]);
       // MyNewLogical is a Logical with no specified parent
       definitionInstance.nameInformation.set('MyNewLogical', [
         {
           location: null,
-          type: 'Logical',
-          id: null,
-          parent: null,
-          instanceOf: null
+          type: 'Logical'
         }
       ]);
       // MyNewResource is a Resource with no specified parent
       definitionInstance.nameInformation.set('MyNewResource', [
         {
           location: null,
-          type: 'Resource',
-          id: null,
-          parent: null,
-          instanceOf: null
+          type: 'Resource'
         }
       ]);
     });
@@ -847,6 +841,15 @@ suite('FshCompletionProvider', () => {
       const elements = instance.getBaseDefinitionElements('MyNewLogical');
       // MyNewLogical has no parent, so it defaults to Base
       assert.lengthOf(elements, 0);
+    });
+
+    test('should get elements for a definition referenced by alias', () => {
+      const elements = instance.getBaseDefinitionElements('$LOGICAL');
+      // $LOGICAL is an alias to https://example.org/fhir/SomeLogical, which is the url for SomeLogical
+      assert.deepEqual(elements, [
+        { path: 'question', types: ['string'], children: [] },
+        { path: 'answer', types: ['string'], children: [] }
+      ]);
     });
   });
 
@@ -1131,8 +1134,10 @@ suite('FshCompletionProvider', () => {
       expectedResource.detail = 'hl7.fhir.r4.core Resource';
       const expectedExtension = new vscode.CompletionItem('MyExtension');
       expectedExtension.detail = 'some.other.package Extension';
-      const expectedLogical = new vscode.CompletionItem('MyLogical');
-      expectedLogical.detail = 'some.other.package Logical';
+      const expectedNameLogical = new vscode.CompletionItem('MyLogical');
+      expectedNameLogical.detail = 'some.other.package Logical';
+      const expectedUrlLogical = new vscode.CompletionItem('https://example.org/fhir/MyLogical');
+      expectedUrlLogical.detail = 'some.other.package Logical';
       const expectedNameCodeSystem = new vscode.CompletionItem('MyCodeSystem');
       expectedNameCodeSystem.detail = 'hl7.fhir.r4.core CodeSystem';
       const expectedIdCodeSystem = new vscode.CompletionItem('my-code-system');
@@ -1146,8 +1151,9 @@ suite('FshCompletionProvider', () => {
       assert.deepInclude(items.get('hl7.fhir.r4.core#4.0.1').resources, expectedResource);
       assert.equal(items.get('some.other.package#1.0.1').extensions.size, 1);
       assert.deepInclude(items.get('some.other.package#1.0.1').extensions, expectedExtension);
-      assert.equal(items.get('some.other.package#1.0.1').logicals.size, 1);
-      assert.deepInclude(items.get('some.other.package#1.0.1').logicals, expectedLogical);
+      assert.equal(items.get('some.other.package#1.0.1').logicals.size, 2);
+      assert.deepInclude(items.get('some.other.package#1.0.1').logicals, expectedNameLogical);
+      assert.deepInclude(items.get('some.other.package#1.0.1').logicals, expectedUrlLogical);
       assert.equal(items.get('hl7.fhir.r4.core#4.0.1').codeSystems.size, 2);
       assert.deepInclude(items.get('hl7.fhir.r4.core#4.0.1').codeSystems, expectedNameCodeSystem);
       assert.deepInclude(items.get('hl7.fhir.r4.core#4.0.1').codeSystems, expectedIdCodeSystem);
@@ -1169,10 +1175,14 @@ suite('FshCompletionProvider', () => {
         instance.cachedFhirEntities.get('some.other.package#1.0.1').extensions,
         expectedExtension
       );
-      assert.equal(instance.cachedFhirEntities.get('some.other.package#1.0.1').logicals.size, 1);
+      assert.equal(instance.cachedFhirEntities.get('some.other.package#1.0.1').logicals.size, 2);
       assert.deepInclude(
         instance.cachedFhirEntities.get('some.other.package#1.0.1').logicals,
-        expectedLogical
+        expectedNameLogical
+      );
+      assert.deepInclude(
+        instance.cachedFhirEntities.get('some.other.package#1.0.1').logicals,
+        expectedUrlLogical
       );
       assert.equal(instance.cachedFhirEntities.get('hl7.fhir.r4.core#4.0.1').codeSystems.size, 2);
       assert.deepInclude(

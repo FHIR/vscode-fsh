@@ -226,21 +226,28 @@ export class FshCompletionProvider implements CompletionItemProvider {
         ['Profile', 'Extension', 'Resource', 'Logical', 'Instance'].includes(info.type)
       );
       if (infoToUse == null) {
-        // no useful info means no useful paths
-        return null;
-      }
-      entityToCheck = infoToUse.parent ?? infoToUse.instanceOf;
-      // special handling for default parents:
-      // an Extension's default parent is Extension
-      // a Resource's default parent is DomainResource
-      // a Logical's default parent is Base
-      if (entityToCheck == null) {
-        if (infoToUse.type === 'Extension') {
-          entityToCheck = 'Extension';
-        } else if (infoToUse.type === 'Resource') {
-          entityToCheck = 'DomainResource';
-        } else if (infoToUse.type === 'Logical') {
-          entityToCheck = 'Base';
+        // the entity may be an alias that we are able to resolve
+        const aliasToUse = entityInfo.find(info => info.type === 'Alias');
+        if (aliasToUse) {
+          entityToCheck = aliasToUse.aliasValue;
+        } else {
+          // otherwise, we don't know
+          return null;
+        }
+      } else {
+        entityToCheck = infoToUse.parent ?? infoToUse.instanceOf;
+        // special handling for default parents:
+        // an Extension's default parent is Extension
+        // a Resource's default parent is DomainResource
+        // a Logical's default parent is Base
+        if (entityToCheck == null) {
+          if (infoToUse.type === 'Extension') {
+            entityToCheck = 'Extension';
+          } else if (infoToUse.type === 'Resource') {
+            entityToCheck = 'DomainResource';
+          } else if (infoToUse.type === 'Logical') {
+            entityToCheck = 'Base';
+          }
         }
       }
     }
@@ -436,13 +443,28 @@ export class FshCompletionProvider implements CompletionItemProvider {
                   const decodedContents = decoder.decode(rawContents);
                   const parsedContents = JSON.parse(decodedContents);
                   const items: EnhancedCompletionItem[] = [];
+                  let snapshotElements: ElementInfo[];
                   if (parsedContents.name) {
                     items.push(new CompletionItem(parsedContents.name));
                   }
                   if (parsedContents.id && parsedContents.name !== parsedContents.id) {
                     items.push(new CompletionItem(parsedContents.id));
                   }
-                  switch (this.determineEntityType(parsedContents)) {
+                  if (parsedContents.url) {
+                    items.push(new CompletionItem(parsedContents.url));
+                  }
+                  const entityType = this.determineEntityType(parsedContents);
+                  // if we are going to set snapshot elements,
+                  // get them here, and set them on each completion item.
+                  if (
+                    ['Resource', 'Type', 'Extension', 'Logical'].includes(entityType) &&
+                    parsedContents.snapshot?.element?.length > 0
+                  ) {
+                    snapshotElements = this.buildElementsFromSnapshot(
+                      parsedContents.snapshot.element
+                    );
+                  }
+                  switch (entityType) {
                     case 'Profile':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Profile`;
@@ -453,10 +475,8 @@ export class FshCompletionProvider implements CompletionItemProvider {
                     case 'Resource':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Resource`;
-                        if (parsedContents.snapshot?.element?.length > 0) {
-                          item.elements = this.buildElementsFromSnapshot(
-                            parsedContents.snapshot.element
-                          );
+                        if (snapshotElements != null) {
+                          item.elements = snapshotElements;
                         }
                         packageEntities.resources.set(item.label, item);
                       });
@@ -465,10 +485,8 @@ export class FshCompletionProvider implements CompletionItemProvider {
                       // a Type, such as Quantity, is allowed in the same contexts as a Resource
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Type`;
-                        if (parsedContents.snapshot?.element?.length > 0) {
-                          item.elements = this.buildElementsFromSnapshot(
-                            parsedContents.snapshot.element
-                          );
+                        if (snapshotElements != null) {
+                          item.elements = snapshotElements;
                         }
                         packageEntities.resources.set(item.label, item);
                       });
@@ -476,10 +494,8 @@ export class FshCompletionProvider implements CompletionItemProvider {
                     case 'Extension':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Extension`;
-                        if (parsedContents.snapshot?.element?.length > 0) {
-                          item.elements = this.buildElementsFromSnapshot(
-                            parsedContents.snapshot.element
-                          );
+                        if (snapshotElements != null) {
+                          item.elements = snapshotElements;
                         }
                         packageEntities.extensions.set(item.label, item);
                       });
@@ -487,10 +503,8 @@ export class FshCompletionProvider implements CompletionItemProvider {
                     case 'Logical':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Logical`;
-                        if (parsedContents.snapshot?.element?.length > 0) {
-                          item.elements = this.buildElementsFromSnapshot(
-                            parsedContents.snapshot.element
-                          );
+                        if (snapshotElements != null) {
+                          item.elements = snapshotElements;
                         }
                         packageEntities.logicals.set(item.label, item);
                       });
