@@ -50,6 +50,15 @@ FSH entity definitions have their names provided as autocomplete results in cont
 - After the `InstanceOf` keyword, results will include `Profile`, `Extension`, and `Resource` names.
 - When writing an `obeys` rule, results will include `Invariant` names.
 
+When writing rules that apply to an element, element paths will be suggested. This feature is still undergoing development, so there are some known limitations to this feature:
+
+- Completion items are only provided for rules on a `Profile`, `Extension`, `Logical`, or `Resource`.
+- Slice names are not included as part of completion items.
+- Completion items are not provided for indented rules.
+- If a type is removed from a choice element with an `only` rule, completion items will still be offered for the removed types.
+- Elements added to a `Logical` or `Resource` by a FSH rule will not be available as completion items for other rules.
+- Only the main element path will have completion items provided. A caret rule will not have completion items provided for the caret path.
+
 ## Go to Definition
 
 ![FSH Go to Definition](images/docs/fsh-go-to-definition.gif)

@@ -526,7 +526,7 @@ suite('FshCompletionProvider', () => {
       assert.isNull(result);
     });
 
-    test.skip('should get the path parts when writing an indented rule', async () => {
+    test('should not get the path parts when writing an indented rule', async () => {
       const filePath = path.join(
         vscode.workspace.workspaceFolders[0].uri.fsPath,
         'profiles',
@@ -542,9 +542,7 @@ suite('FshCompletionProvider', () => {
       await vscode.workspace.applyEdit(fileChange);
       definitionInstance.updateNamesFromFile(filePath, doc);
       const result = instance.getElementPathInformation(doc, new vscode.Position(10, 4));
-      assert.equal(result.baseDefinition, 'Observation');
-      assert.lengthOf(result.existingPath, 1);
-      assert.deepEqual(result.existingPath, ['component']);
+      assert.isNull(result);
     });
   });
 
