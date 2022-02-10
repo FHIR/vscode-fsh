@@ -32,7 +32,7 @@ export type ElementInfo = {
 
 export type EnhancedCompletionItem = CompletionItem & {
   elements?: ElementInfo[];
-  baseDefinition?: string;
+  type?: string;
 };
 
 type DependencyDetails = {
@@ -170,6 +170,8 @@ export class FshCompletionProvider implements CompletionItemProvider {
             return pathPart.replace(/\[[^\]]+\]$/, '');
           }
         });
+      // find the definition that this rule belongs to by finding the nearest entity
+      // whose definition comes before this rule.
       const possibleNames = this.definitionProvider.fileNames.get(document.uri.fsPath);
       const possibleEntities = possibleNames.flatMap(name => {
         return this.definitionProvider.nameInformation
@@ -253,11 +255,12 @@ export class FshCompletionProvider implements CompletionItemProvider {
       }
     }
     // is the entity present in the dependencies' entities?
-    // we may have to search twice, if we find a Profile
+    // if we find a Profile, we'll have to search again using its type,
+    // since we don't store elements for Profiles.
     let originalType: string;
     for (const [, entities] of this.fhirEntities) {
       if (entities.profiles.has(entityToCheck)) {
-        originalType = entities.profiles.get(entityToCheck).baseDefinition;
+        originalType = entities.profiles.get(entityToCheck).type;
         break;
       }
       if (entities.extensions.has(entityToCheck)) {
@@ -288,27 +291,31 @@ export class FshCompletionProvider implements CompletionItemProvider {
   }
 
   public getPathItems(existingPath: string[], baseElements: ElementInfo[]): CompletionItem[] {
-    let targetElement: ElementInfo;
-    let targetLevel = baseElements;
+    // targetElement is the element that we have reached by path traversal.
+    // since we don't have ElementInfo for the root element, we build a minimal definition.
+    let targetElement: ElementInfo = {
+      path: '',
+      types: [],
+      children: baseElements
+    };
     for (const pathPart of existingPath) {
       // if we are at a leaf element, try to expand based on types
-      if (targetLevel.length === 0 && targetElement.types?.length > 0) {
+      if (targetElement.children.length === 0 && targetElement.types?.length > 0) {
         targetElement.children = this.generateItemsFromTypes(targetElement.types);
-        targetLevel = targetElement.children;
       }
-      targetElement = targetLevel.find(element => element.path === pathPart);
-      targetLevel = targetElement?.children;
-      if (targetLevel == null) {
+      // then, traverse using the pathPart
+      targetElement = targetElement.children.find(element => element.path === pathPart);
+      if (targetElement?.children == null) {
         return [];
       }
     }
-    if (targetLevel) {
+    if (targetElement.children) {
+      // the last pathPart may have brought us to a leaf element.
       // if we are at a leaf element, try to expand based on types
-      if (targetLevel.length === 0 && targetElement.types?.length > 0) {
+      if (targetElement.children.length === 0 && targetElement.types?.length > 0) {
         targetElement.children = this.generateItemsFromTypes(targetElement.types);
-        targetLevel = targetElement.children;
       }
-      return targetLevel.map(element => new CompletionItem(element.path));
+      return targetElement.children.map(element => new CompletionItem(element.path));
     } else {
       return [];
     }
@@ -322,7 +329,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
     if (availableElements.length === 1) {
       return availableElements[0];
     } else {
-      // on an element with multiple types, only include elements that can be used regardless of type
+      // on an element with multiple types, only include elements all the types have in common
       const sharedElements = availableElements[0].filter(element => {
         return availableElements.every(potentialElements => {
           return potentialElements.some(potential => potential.path === element.path);
@@ -469,7 +476,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
                     case 'Profile':
                       items.forEach(item => {
                         item.detail = `${dependency.packageId} Profile`;
-                        item.baseDefinition = parsedContents.type;
+                        item.type = parsedContents.type;
                         packageEntities.profiles.set(item.label, item);
                       });
                       break;

@@ -565,9 +565,9 @@ suite('FshCompletionProvider', () => {
       ];
       // then, some of our own custom packages
       const smallProfile: EnhancedCompletionItem = new vscode.CompletionItem('SomeProfile');
-      // when storing profiles, we don't store elements, just the baseDefinition,
+      // when storing profiles, we don't store elements, just the type,
       // which comes from the structure definition's type field.
-      smallProfile.baseDefinition = 'SmallResource';
+      smallProfile.type = 'SmallResource';
       const smallResource: EnhancedCompletionItem = new vscode.CompletionItem('SmallResource');
       smallResource.elements = [
         { path: 'height', types: ['Quantity'], children: [] },
@@ -1124,10 +1124,10 @@ suite('FshCompletionProvider', () => {
       const items = await instance.makeItemsFromDependencies(dependencies);
       assert.hasAllKeys(items, ['some.other.package#1.0.1', 'hl7.fhir.r4.core#4.0.1']);
 
-      // the completion item for a profile should come with a baseDefinition
+      // the completion item for a profile should come with a type
       const expectedProfile: EnhancedCompletionItem = new vscode.CompletionItem('MyProfile');
       expectedProfile.detail = 'some.other.package Profile';
-      expectedProfile.baseDefinition = 'MyResource';
+      expectedProfile.type = 'MyResource';
       const expectedResource = new vscode.CompletionItem('MyResource');
       expectedResource.detail = 'hl7.fhir.r4.core Resource';
       const expectedExtension = new vscode.CompletionItem('MyExtension');
