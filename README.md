@@ -52,7 +52,7 @@ FSH entity definitions have their names provided as autocomplete results in cont
 
 When writing rules that apply to an element, element paths will be suggested. This feature is still undergoing development, so there are some known limitations to this feature:
 
-- Completion items are only provided for rules on a `Profile`, `Extension`, `Logical`, or `Resource`.
+- Completion items are only provided for rules on a `Profile`, `Extension`, `Logical`, `Resource`, or `Instance`.
 - Slice names are not included as part of completion items.
 - Completion items are not provided for indented rules.
 - If a type is removed from a choice element with an `only` rule, completion items will still be offered for the removed types.
