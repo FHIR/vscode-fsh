@@ -2,5 +2,6 @@
     "resourceType": "StructureDefinition",
     "kind": "logical",
     "derivation": "specialization",
-    "name": "MyLogical"
+    "name": "MyLogical",
+    "url": "https://example.org/fhir/MyLogical"
 }

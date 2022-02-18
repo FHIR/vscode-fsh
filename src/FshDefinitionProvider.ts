@@ -27,10 +27,25 @@ export type EntityType =
   | 'Invariant'
   | 'Mapping';
 
+export type MetadataField = 'id' | 'parent' | 'instanceOf';
+
 export type NameInfo = {
   location: Location;
   type: EntityType;
+  id?: string;
+  parent?: string;
+  instanceOf?: string;
+  aliasValue?: string;
+};
+
+type EntityDetails = {
+  name: string;
+  startLine: number;
+  entityType: EntityType;
   id: string;
+  parent: string;
+  instanceOf: string;
+  aliasValue: string;
 };
 
 export class FshDefinitionProvider implements DefinitionProvider {
@@ -72,18 +87,14 @@ export class FshDefinitionProvider implements DefinitionProvider {
       // RuleSet, ValueSet
       if (doc.entity() && doc.entity().length > 0) {
         for (const entity of doc.entity()) {
-          const { name, id, startLine, entityType } = getNameAndLine(entity);
+          const details = getEntityDetails(entity);
           // if we found a name, add it to our maps
-          if (name) {
-            this.fileNames.get(fshFile).push(name);
-            if (!this.nameInformation.has(name)) {
-              this.nameInformation.set(name, []);
+          if (details.name) {
+            this.fileNames.get(fshFile).push(details.name);
+            if (!this.nameInformation.has(details.name)) {
+              this.nameInformation.set(details.name, []);
             }
-            this.nameInformation.get(name).push({
-              location: new Location(Uri.file(fshFile), new Position(startLine, 0)),
-              type: entityType,
-              id
-            });
+            this.nameInformation.get(details.name).push(buildNameInfoFromDetails(fshFile, details));
           }
         }
       }
@@ -133,18 +144,16 @@ export class FshDefinitionProvider implements DefinitionProvider {
         const newNames: string[] = [];
         if (doc.entity() && doc.entity().length > 0) {
           for (const entity of doc.entity()) {
-            const { name, id, startLine, entityType } = getNameAndLine(entity);
+            const details = getEntityDetails(entity);
             // if we found a name, add it to our maps
-            if (name) {
-              newNames.push(name);
-              if (!this.nameInformation.has(name)) {
-                this.nameInformation.set(name, []);
+            if (details.name) {
+              newNames.push(details.name);
+              if (!this.nameInformation.has(details.name)) {
+                this.nameInformation.set(details.name, []);
               }
-              this.nameInformation.get(name).push({
-                location: new Location(Uri.file(fshFile), new Position(startLine, 0)),
-                type: entityType,
-                id
-              });
+              this.nameInformation
+                .get(details.name)
+                .push(buildNameInfoFromDetails(fshFile, details));
             }
           }
         }
@@ -212,17 +221,19 @@ export class FshDefinitionProvider implements DefinitionProvider {
   }
 }
 
-function getNameAndLine(
-  entity: any
-): { name: string; id: string; startLine: number; entityType: EntityType } {
+function getEntityDetails(entity: any): EntityDetails {
   let name: string;
   let id: string;
+  let parent: string;
+  let instanceOf: string;
   let startLine: number;
   let entityType: EntityType;
+  let aliasValue: string;
   // some entities work a little differently
   if (entity.alias()) {
     name = entity.alias().SEQUENCE()[0].getText();
     startLine = entity.alias().start.line - 1;
+    aliasValue = entity.alias().SEQUENCE()[1]?.getText() ?? entity.alias().CODE()?.getText();
     entityType = 'Alias';
   } else if (entity.ruleSet()) {
     name = entity.ruleSet().RULESET_REFERENCE().getText().trim();
@@ -241,12 +252,14 @@ function getNameAndLine(
       entityType = 'Profile';
       if (typedEntity.sdMetadata()?.length > 0) {
         id = getIdFromMetadata(typedEntity.sdMetadata());
+        parent = getParentFromMetadata(typedEntity.sdMetadata());
       }
     } else if (entity.extension()) {
       typedEntity = entity.extension();
       entityType = 'Extension';
       if (typedEntity.sdMetadata()?.length > 0) {
         id = getIdFromMetadata(typedEntity.sdMetadata());
+        parent = getParentFromMetadata(typedEntity.sdMetadata());
       }
     } else if (entity.logical()) {
       typedEntity = entity.logical();
@@ -263,6 +276,9 @@ function getNameAndLine(
     } else if (entity.instance()) {
       typedEntity = entity.instance();
       entityType = 'Instance';
+      if (typedEntity.instanceMetadata()?.length > 0) {
+        instanceOf = getInstanceOfFromMetadata(typedEntity.instanceMetadata());
+      }
     } else if (entity.valueSet()) {
       typedEntity = entity.valueSet();
       entityType = 'ValueSet';
@@ -292,14 +308,54 @@ function getNameAndLine(
     name,
     id,
     startLine,
-    entityType
+    entityType,
+    parent,
+    instanceOf,
+    aliasValue
   };
+}
+
+function buildNameInfoFromDetails(fileName: string, details: EntityDetails): NameInfo {
+  const newInfo: NameInfo = {
+    location: new Location(Uri.file(fileName), new Position(details.startLine, 0)),
+    type: details.entityType
+  };
+  // add extra properties if they are defined
+  if (details.id) {
+    newInfo.id = details.id;
+  }
+  if (details.parent) {
+    newInfo.parent = details.parent;
+  }
+  if (details.instanceOf) {
+    newInfo.instanceOf = details.instanceOf;
+  }
+  if (details.aliasValue) {
+    newInfo.aliasValue = details.aliasValue;
+  }
+  return newInfo;
 }
 
 function getIdFromMetadata(metadata: { id: () => any }[]): string {
   for (const meta of metadata) {
     if (meta.id()) {
       return meta.id().name().getText();
+    }
+  }
+}
+
+function getParentFromMetadata(metadata: { parent: () => any }[]): string {
+  for (const meta of metadata) {
+    if (meta.parent()) {
+      return meta.parent().name().getText();
+    }
+  }
+}
+
+function getInstanceOfFromMetadata(metadata: { instanceOf: () => any }[]): string {
+  for (const meta of metadata) {
+    if (meta.instanceOf()) {
+      return meta.instanceOf().name().getText();
     }
   }
 }
