@@ -63,6 +63,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
   cachePath: string;
   // fsWatcher keeps an eye on the workspace for filesystem events
   fsWatcher: FileSystemWatcher;
+  fhirVersion: string;
 
   constructor(private definitionProvider: FshDefinitionProvider) {
     this.cachePath = path.join(os.homedir(), '.fhir', 'packages');
@@ -380,6 +381,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
           } else if (!fhirVersion.startsWith('4.0.')) {
             fhirPackage = 'hl7.fhir.r5.core';
           }
+          this.fhirVersion = fhirVersion;
           // try to get dependencies: more or less doing SUSHI's importConfiguration.parseDependencies
           if (parsedConfig.dependencies) {
             parsedDependencies = Object.entries(parsedConfig.dependencies).map(
