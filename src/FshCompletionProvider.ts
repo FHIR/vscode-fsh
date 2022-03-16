@@ -374,6 +374,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
               }
             })
             .find(version => /current|4\.0\.1|4\.[1-9]\d*.\d+/.test(version));
+          this.fhirVersion = fhirVersion;
           if (!fhirVersion) {
             fhirVersion = '4.0.1';
           } else if (/^4\.[13]\./.test(fhirVersion)) {
@@ -381,7 +382,6 @@ export class FshCompletionProvider implements CompletionItemProvider {
           } else if (!fhirVersion.startsWith('4.0.')) {
             fhirPackage = 'hl7.fhir.r5.core';
           }
-          this.fhirVersion = fhirVersion;
           // try to get dependencies: more or less doing SUSHI's importConfiguration.parseDependencies
           if (parsedConfig.dependencies) {
             parsedDependencies = Object.entries(parsedConfig.dependencies).map(
