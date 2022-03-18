@@ -11,38 +11,6 @@
       "problemMatcher": [],
       "label": "npm: build",
       "detail": "tsc -p ./"
-    },
-    {
-      "label": "SUSHI",
-      "type": "shell",
-      "command": "sushi ${workspaceFolder}",
-      "group": {
-        "kind": "build"
-      },
-      "presentation": {
-        "clear": true,
-        "reveal": "always",
-        "echo": false
-      },
-      "problemMatcher": {
-        "owner": "vscode-language-fsh",
-        "fileLocation": "absolute",
-        "pattern": [
-          {
-            "regexp": "^(warn|error) (.+)$",
-            "severity": 1,
-            "message": 2
-          },
-          {
-            "regexp": "^  File: (.+)$",
-            "file": 1
-          },
-          {
-            "regexp": "^  Line: (\\d+)$",
-            "line": 1
-          }
-        ]
-      }
     }
   ]
 }

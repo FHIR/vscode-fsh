@@ -62,7 +62,43 @@
           "when": "editorLangId == fsh"
         }
       ]
-    }
+    },
+    "problemMatchers": [
+      {
+        "owner": "vscode-language-fsh",
+        "name": "sushi",
+        "fileLocation": "absolute",
+        "pattern": [
+          {
+            "regexp": "^(warn|error) (.+)$",
+            "severity": 1,
+            "message": 2
+          },
+          {
+            "regexp": "^  File: (.+)$",
+            "file": 1
+          },
+          {
+            "regexp": "^  Line: (\\d+)$",
+            "line": 1
+          }
+        ]
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "fsh",
+        "required": [
+          "task"
+        ],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "FSH Task"
+          }
+        }
+      }
+    ]
   },
   "scripts": {
     "build": "tsc -p ./",
