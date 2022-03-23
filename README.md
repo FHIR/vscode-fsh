@@ -71,6 +71,18 @@ FSH entity definitions within your workspace can be found from anywhere their na
 
 Documentation pages can be opened directly from your FSH files. Right-click on the name of any FHIR resource or FSH keyword, and select "Open FHIR Documentation" from the context menu.
 
+## Tasks
+
+![FSH Run SUSHI Task](images/docs/fsh-run-sushi-task.gif)
+
+The extension provides a custom task for running SUSHI on the current workspace. The task will run SUSHI on the workspace, log messages to VS Code's integrated Terminal tab, report any errors or warnings in VS Code's Problems tab, and highlight errors and warnings inline in the FSH file. Selecting an error or warning from the Problems tab will open the file the error is in.
+
+Note that after any errors or warnings are resolve in the FSH, SUSHI must be run through the task to resolve them in the Problems tab and inline in the FSH file.
+
+To run the SUSHI Build task, use VS Code's Run Task feature, select 'fsh' and select 'fsh: sushi'.
+
+Note that you must have SUSHI installed locally in order for the task to run successfully. See [SUSHI Installation instructions](https://fshschool.org/docs/sushi/installation/) for help installing.
+
 ## Compile and Run (for Developers)
 
 - run `npm install` in this folder. This installs all necessary npm modules in both the
