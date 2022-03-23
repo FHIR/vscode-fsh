@@ -79,7 +79,7 @@
             "file": 1
           },
           {
-            "regexp": "^  Line: (\\d+)$",
+            "regexp": "^  Line: (\\d+)( - (\\d+))?$",
             "line": 1
           }
         ]
