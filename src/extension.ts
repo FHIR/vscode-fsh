@@ -24,7 +24,6 @@ export const SPECIAL_URLS = new Map<string, Uri>([
     'profile',
     Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-profiles', true)
   ],
-  ['extension', Uri.parse('https://hl7.org/fhir/extensibility.html', true)],
   [
     'extension:',
     Uri.parse('https://hl7.org/fhir/uv/shorthand/reference.html#defining-extensions', true)
@@ -73,6 +72,24 @@ export const SPECIAL_URLS = new Map<string, Uri>([
   ]
 ]);
 
+// Documentation URLs are based on the FHIR version supplied in the project configuration.
+// http://hl7.org/fhir/directory.html provides the list of FHIR versions with available documentation.
+// SUSHI only supports versions 4.0.1 and later, so only those are supported here.
+// A user might leave out the -snapshot1 portion of versions, but in those cases,
+// the snapshot documentation is probably still useful.
+export const DOCUMENTATION_VERSION_PATHS = new Map<string, string>([
+  ['4.0.1', '/R4'],
+  ['4.1.0', '/2021Mar'],
+  ['4.3.0-snapshot1', '/4.3.0-snapshot1'],
+  ['4.3.0', '/4.3.0-snapshot1'],
+  ['4.2.0', '/2020Feb'],
+  ['4.4.0', '/2020May'],
+  ['4.5.0', '/2020Sep'],
+  ['4.6.0', '/2021May'],
+  ['5.0.0-snapshot1', '/5.0.0-snapshot1'],
+  ['5.0.0', '/5.0.0-snapshot1']
+]);
+
 export function activate(
   context: ExtensionContext
 ): {
@@ -85,17 +102,21 @@ export function activate(
     languages.registerDefinitionProvider(FSH_MODE, definitionProviderInstance),
     languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance, '.')
   );
-  commands.registerCommand('extension.openFhir', openFhirDocumentation);
+  commands.registerCommand('extension.openFhir', () =>
+    openFhirDocumentation(completionProviderInstance)
+  );
   completionProviderInstance.updateFhirEntities();
   return { definitionProviderInstance, completionProviderInstance };
 }
 
-export async function openFhirDocumentation(): Promise<void> {
+export async function openFhirDocumentation(
+  completionProviderInstance: FshCompletionProvider
+): Promise<void> {
   const document = window.activeTextEditor.document;
   const startPosition = window.activeTextEditor.selection.start;
   if (document && startPosition) {
     const name = getFhirDocumentationName(document, startPosition);
-    const uriToOpen = getDocumentationUri(name);
+    const uriToOpen = getDocumentationUri(name, completionProviderInstance.fhirVersion);
     if (await isDocumentationUriValid(uriToOpen.toString())) {
       env.openExternal(uriToOpen);
     } else {
@@ -114,12 +135,17 @@ export function getFhirDocumentationName(document: TextDocument, position: Posit
     .replace(/\s/, ''); // If we matched the Extension special case, remove any spaces between Extension and :
 }
 
-export function getDocumentationUri(name: string): Uri {
+export function getDocumentationUri(name: string, version: string): Uri {
+  const versionPath = DOCUMENTATION_VERSION_PATHS.has(version)
+    ? DOCUMENTATION_VERSION_PATHS.get(version)
+    : '';
   const lowerName = name.toLowerCase();
-  if (SPECIAL_URLS.has(lowerName)) {
+  if (lowerName === 'extension') {
+    return Uri.parse(`https://hl7.org/fhir${versionPath}/extensibility.html`, true);
+  } else if (SPECIAL_URLS.has(lowerName)) {
     return SPECIAL_URLS.get(lowerName);
   } else {
-    return Uri.parse(`https://hl7.org/fhir/${lowerName}.html`, true);
+    return Uri.parse(`https://hl7.org/fhir${versionPath}/${lowerName}.html`, true);
   }
 }
 

@@ -67,20 +67,35 @@ suite('Extension Test Suite', () => {
 
   suite('#getDocumentationUri', () => {
     test('should return the corresponding specific uri when the input is a FSH entity name', () => {
+      // FSH documentation URLs are not affected by the project's FHIR version
       assert.equal(
-        myExtension.getDocumentationUri('Profile'),
+        myExtension.getDocumentationUri('Profile', null),
         myExtension.SPECIAL_URLS.get('profile')
       );
       assert.equal(
-        myExtension.getDocumentationUri('CodeSystem'),
+        myExtension.getDocumentationUri('CodeSystem', null),
         myExtension.SPECIAL_URLS.get('codesystem')
       );
     });
 
-    test('should return a FHIR documentation uri when the input is not a FSH entity name', () => {
+    test('should return a FHIR documentation uri when the name is not a FSH entity and the FHIR version is not available', () => {
       assert.deepEqual(
-        myExtension.getDocumentationUri('PractitionerRole'),
+        myExtension.getDocumentationUri('PractitionerRole', null),
         vscode.Uri.parse('https://hl7.org/fhir/practitionerrole.html', true)
+      );
+    });
+
+    test('should return a FHIR documentation uri when the name is not a FSH entity and a supported FHIR version is provided', () => {
+      assert.deepEqual(
+        myExtension.getDocumentationUri('Observation', '4.1.0'),
+        vscode.Uri.parse('https://hl7.org/fhir/2021Mar/observation.html', true)
+      );
+    });
+
+    test('should return a FHIR documentation uri when the name is not a FSH entity and an unsupported FHIR version is provided', () => {
+      assert.deepEqual(
+        myExtension.getDocumentationUri('MedicationRequest', '4.6.8'),
+        vscode.Uri.parse('https://hl7.org/fhir/medicationrequest.html', true)
       );
     });
   });

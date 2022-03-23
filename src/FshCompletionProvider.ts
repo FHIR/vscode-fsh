@@ -63,6 +63,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
   cachePath: string;
   // fsWatcher keeps an eye on the workspace for filesystem events
   fsWatcher: FileSystemWatcher;
+  fhirVersion: string;
 
   constructor(private definitionProvider: FshDefinitionProvider) {
     this.cachePath = path.join(os.homedir(), '.fhir', 'packages');
@@ -373,6 +374,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
               }
             })
             .find(version => /current|4\.0\.1|4\.[1-9]\d*.\d+/.test(version));
+          this.fhirVersion = fhirVersion;
           if (!fhirVersion) {
             fhirVersion = '4.0.1';
           } else if (/^4\.[13]\./.test(fhirVersion)) {
