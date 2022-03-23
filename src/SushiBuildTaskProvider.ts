@@ -19,7 +19,7 @@ export class SushiBuildTaskProvider implements TaskProvider {
   }
 }
 
-function getSushiBuildTask() {
+export function getSushiBuildTask(): Task {
   const sushiBuildTask = new Task(
     { type: 'fsh', task: 'Build SUSHI' },
     TaskScope.Workspace,
@@ -29,8 +29,7 @@ function getSushiBuildTask() {
     '$sushi' // problemMatcher
   );
   sushiBuildTask.presentationOptions = {
-    clear: true,
-    reveal: 2 // 'silent'
+    clear: true
   };
   sushiBuildTask.group = TaskGroup.Build;
   return sushiBuildTask;
