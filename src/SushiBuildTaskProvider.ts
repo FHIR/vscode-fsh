@@ -25,7 +25,7 @@ export function getSushiBuildTask(): Task {
     TaskScope.Workspace,
     'sushi', // name
     'fsh',
-    new ShellExecution('sushi ${workspaceFolder}'),
+    new ShellExecution('sushi "${workspaceFolder}"'),
     '$sushi' // problemMatcher
   );
   sushiBuildTask.presentationOptions = {
