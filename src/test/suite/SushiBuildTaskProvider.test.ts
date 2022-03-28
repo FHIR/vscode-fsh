@@ -13,7 +13,7 @@ suite('SushiBuildTaskProvider', () => {
       assert.equal(task.scope, 2); // TaskScope.Workspace
       assert.equal(task.name, 'sushi');
       assert.equal(task.source, 'fsh');
-      assert.deepEqual(task.execution, new vscode.ShellExecution('sushi ${workspaceFolder}'));
+      assert.deepEqual(task.execution, new vscode.ShellExecution('sushi "${workspaceFolder}"'));
       assert.deepEqual(task.problemMatchers, ['$sushi']);
       assert.deepEqual(task.presentationOptions, { clear: true });
       assert.equal(task.group, vscode.TaskGroup.Build);
