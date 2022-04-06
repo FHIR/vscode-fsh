@@ -79,7 +79,7 @@ The extension provides a custom task for running SUSHI on the current workspace.
 
 Note that after any errors or warnings are resolve in the FSH, SUSHI must be run through the task to resolve them in the Problems tab and inline in the FSH file.
 
-To run the SUSHI Build task, use VS Code's Run Task feature, select 'fsh' and select 'fsh: sushi'.
+To run the SUSHI Build task, use VS Code's Run Task feature, select 'fsh' and select 'fsh: sushi'. The task can also be run using the keyboard shortcut for running build tasks, which is ⇧⌘B on Mac and Ctrl+Shift+B on Windows.
 
 Note that you must have SUSHI installed locally in order for the task to run successfully. See [SUSHI Installation instructions](https://fshschool.org/docs/sushi/installation/) for help installing.
 
