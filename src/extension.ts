@@ -1,5 +1,6 @@
 import {
   languages,
+  tasks,
   commands,
   window,
   ExtensionContext,
@@ -13,6 +14,7 @@ import {
 import axios from 'axios';
 import { FshDefinitionProvider } from './FshDefinitionProvider';
 import { FshCompletionProvider } from './FshCompletionProvider';
+import { SushiBuildTaskProvider } from './SushiBuildTaskProvider';
 
 const FSH_MODE: DocumentFilter = { language: 'fsh', scheme: 'file' };
 // For FSH entity names and keywords, show the user FSH documentation.
@@ -106,6 +108,7 @@ export function activate(
     openFhirDocumentation(completionProviderInstance)
   );
   completionProviderInstance.updateFhirEntities();
+  tasks.registerTaskProvider('fsh', new SushiBuildTaskProvider());
   return { definitionProviderInstance, completionProviderInstance };
 }
 
