@@ -94,16 +94,17 @@ Note that you must have SUSHI installed locally in order for the task to run suc
 ## NPM Tasks
 
 The following NPM tasks may be useful in development:
-| Task | Description |
-| ---- | ----------- |
-| **build** | compiles `src/**/*.ts` files to `out/**/*.js` files using the TypeScript compiler (tsc) |
-| **build:watch** | similar to _build_ but automatically builds when changes are detected in src files |
-| **lint** | checks all src files to ensure they follow project code styles and rules |
-| **lint:fix** | fixes lint errors when automatic fixes are available for them |
-| **prettier** | checks all src files to ensure they follow project formatting conventions |
-| **prettier:fix** | fixes prettier errors by rewriting files using project formatting conventions |
-| **test** | runs the test suite |
-| **check** | runs all the checks performed as part of ci (lint, prettier, test) |
+
+| Task                | Description                                                                             |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| **build**           | compiles `src/**/*.ts` files to `out/**/*.js` files using the TypeScript compiler (tsc) |
+| **build:watch**     | similar to _build_ but automatically builds when changes are detected in src files      |
+| **lint**            | checks all src files to ensure they follow project code styles and rules                |
+| **lint:fix**        | fixes lint errors when automatic fixes are available for them                           |
+| **prettier**        | checks all src files to ensure they follow project formatting conventions               |
+| **prettier:fix**    | fixes prettier errors by rewriting files using project formatting conventions           |
+| **test**            | runs the test suite                                                                     |
+| **check**           | runs all the checks performed as part of ci (lint, prettier, test)                      |
 
 To run any of these tasks, use `npm run`. For example:
 
