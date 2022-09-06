@@ -95,7 +95,7 @@
       "patterns": [
         {
           "name": "constant.numeric.fsh",
-          "match": "\\b(?<=\\s|^)(-?\\d+(\\.\\d+)?)(?=\\s)\\b"
+          "match": "\\b(?<=[\\s,]|^)(-?\\d+(\\.\\d+)?)(?=[\\s,])\\b"
         }
       ]
     },
@@ -107,7 +107,7 @@
         },
         {
           "name": "constant.numeric.code.fsh",
-          "match": "#[^\\s]*"
+          "match": "#[^\\s,]*"
         },
         {
           "name": "constant.numeric.ucum.unit.fsh",
