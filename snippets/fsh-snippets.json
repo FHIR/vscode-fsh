@@ -130,7 +130,7 @@
 			"Mapping: $1",
 			"Source: $2",
 			"Target: \"$3\"",
-			"Id: \"$4\"",
+			"Id: $4",
 			"Title: \"$5\"",
 			"Description: \"$6\"",
 			"* $0"
