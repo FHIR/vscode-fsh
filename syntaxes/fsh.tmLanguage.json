@@ -47,7 +47,59 @@
         },
         {
           "name": "keyword.reserved.fsh",
-          "match": "\\b(?<=\\s|^)(and|codes|contains|descendent-of|exclude|exists|from|generalizes|include|in|insert|is-a|is-not-a|named|not-in|obeys|only|or|regex|(?<=\\bfrom\\s*)system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
+          "match": "\\b(?<=\\s|^)(and|codes|contains|descendent-of|exclude|exists|generalizes|include|in|is-a|is-not-a|named|not-in|only|or|regex|(?<=\\bfrom\\s*)system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
+        },
+        {
+          "match": "\\b(?<=\\s|^)(from|obeys)\\s+(\\S+)((\\s+and\\s+(\\S+))*)",
+          "captures": {
+            "1": {
+              "name": "keyword.reserved.fsh"
+            },
+            "2": {
+              "name": "entity.name.type.fsh"
+            },
+            "3": {
+              "patterns": [
+                {
+                  "name": "keyword.reserved.fsh",
+                  "match": "(and)"
+                },
+                {
+                  "name": "entity.name.type.fsh",
+                  "match": "\\S+"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "begin": "\\b(insert)\\s+(\\S+)\\s*\\(",
+          "beginCaptures": {
+            "0": {
+              "name": "keyword.reserved.fsh"
+            },
+            "1": {
+              "name": "entity.name.type.fsh"
+            }
+          },
+          "end": "\\)",
+          "patterns": [
+            {
+              "name": "variable.parameter.fsh",
+              "match": "([^\\s\\),]+)"
+            }
+          ]
+        },
+        {
+          "match": "\\b(insert)\\s+(\\S+)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.reserved.fsh"
+            },
+            "2": {
+              "name": "entity.name.type.fsh"
+            }
+          }
         },
         {
           "name": "keyword.reserved.fsh",
