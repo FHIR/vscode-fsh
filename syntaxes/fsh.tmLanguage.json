@@ -29,7 +29,21 @@
       "patterns": [
         {
           "name": "keyword.control.fsh",
-          "match": "\\b(Alias|CodeSystem|Expression|Extension|Description|Id|Instance|InstanceOf|Invariant|Logical|Mapping|Mixins|Parent|Profile|Resource|RuleSet|Severity|Source|Target|Title|Usage|ValueSet|XPath)(?=\\s*:)\\b"
+          "match": "\\b(Alias|Expression|Description|Id|Mixins|Severity|Target|Title|Usage|XPath)(?=\\s*:)\\b"
+        },
+        {
+          "match": "\\b(CodeSystem|Extension|Instance|InstanceOf|Invariant|Logical|Mapping|Parent|Profile|Resource|RuleSet|Source|ValueSet)\\s?(:)\\s+(\\w+)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.control.fsh"
+            },
+            "2": {
+              "name": "keyword.tokens.fsh"
+            },
+            "3": {
+              "name": "entity.name.type.fsh"
+            }
+          }
         },
         {
           "name": "keyword.reserved.fsh",
