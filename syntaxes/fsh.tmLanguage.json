@@ -51,7 +51,17 @@
             "0": {
               "name": "keyword.reserved.fsh"
             }
-          }
+          },
+          "patterns": [
+            {
+              "name": "keyword.reserved.fsh",
+              "match": "(or)"
+            },
+            {
+              "name": "entity.name.type.fsh",
+              "match": "([^\\s\\)]+)"
+            }
+          ]
         },
         {
           "name": "keyword.tokens.fsh",
