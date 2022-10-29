@@ -96,6 +96,10 @@
         {
           "name": "constant.numeric.fsh",
           "match": "\\b(?<=[\\s,]|^)(-?\\d+(\\.\\d+)?)(?=[\\s,])\\b"
+        },
+        {
+         "name": "constant.numeric.fsh",
+         "match": "\\b(\\d+\\.\\.(\\d+|\\*))"
         }
       ]
     },
@@ -113,6 +117,14 @@
           "name": "constant.numeric.ucum.unit.fsh",
           "begin": "'",
           "end": "'"
+        },
+        {
+         "name": "constant.numeric.code.fsh",
+         "match": "\\$[^\\s]*"
+        },
+        {
+         "name": "constant.numeric.code.fsh",
+         "match": "(\\^\\S+)"
         }
       ]
     },
