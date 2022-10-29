@@ -75,10 +75,10 @@
         {
           "begin": "\\b(insert)\\s+(\\S+)\\s*\\(",
           "beginCaptures": {
-            "0": {
+            "1": {
               "name": "keyword.reserved.fsh"
             },
-            "1": {
+            "2": {
               "name": "entity.name.type.fsh"
             }
           },
@@ -174,8 +174,8 @@
           "match": "\\b(?<=[\\s,]|^)(-?\\d+(\\.\\d+)?)(?=[\\s,])\\b"
         },
         {
-         "name": "constant.numeric.fsh",
-         "match": "\\b(\\d+\\.\\.(\\d+|\\*))"
+          "name": "constant.numeric.fsh",
+          "match": "\\b(\\d+\\.\\.(\\d+|\\*))"
         }
       ]
     },
@@ -195,12 +195,12 @@
           "end": "'"
         },
         {
-         "name": "constant.numeric.code.fsh",
-         "match": "\\$[^\\s]*"
+          "name": "constant.numeric.code.fsh",
+          "match": "\\$[^\\s]*"
         },
         {
-         "name": "constant.numeric.code.fsh",
-         "match": "(\\^\\S+)"
+          "name": "constant.numeric.code.fsh",
+          "match": "(\\^\\S+)"
         }
       ]
     },
