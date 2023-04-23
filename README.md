@@ -73,7 +73,7 @@ Documentation pages can be opened directly from your FSH files. Right-click on t
 
 ## Tasks
 
-The extension provides two custom tasks, one to run SUSHI on the current workspace, the second runs the FHIR validator on the FSH generated resources.
+The extension provides two custom tasks, one to run SUSHI on the current workspace, the other to run the FHIR validator on the FSH generated resources.
 
 ### Run SUSHI
 ![FSH Run SUSHI Task](images/docs/fsh-run-sushi-task.gif)
