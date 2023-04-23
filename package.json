@@ -86,7 +86,7 @@
         ]
       },
       {
-        "owner": "vscode-language-fsh-fihrValidator",
+        "owner": "vscode-language-fsh-fhirValidator",
         "name": "fhirValidator",
         "fileLocation": "absolute",
         "pattern": [
