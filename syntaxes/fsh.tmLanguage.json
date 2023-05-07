@@ -96,7 +96,7 @@
               "name": "entity.name.type.fsh"
             }
           },
-          "end": "\\)",
+          "end": "(?<!\\\\)\\)",
           "patterns": [
             {
               "name": "variable.parameter.fsh",
