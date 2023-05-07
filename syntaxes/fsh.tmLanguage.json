@@ -213,7 +213,7 @@
           "match": "\\$[^\\s]*"
         },
         {
-          "name": "constant.numeric.code.fsh",
+          "name": "constant.character.escape.fsh",
           "match": "(\\^\\S+)"
         }
       ]
