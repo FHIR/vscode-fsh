@@ -32,7 +32,7 @@
           "match": "\\b(Alias|Expression|Description|Id|Mixins|Severity|Target|Title|Usage|XPath)(?=\\s*:)\\b"
         },
         {
-          "match": "\\b(CodeSystem|Extension|Instance|InstanceOf|Invariant|Logical|Mapping|Parent|Profile|Resource|RuleSet|Source|ValueSet)\\s?(:)\\s+(\\w+)\\b",
+          "match": "\\b(CodeSystem|Extension|Instance|InstanceOf|Invariant|Logical|Mapping|Parent|Profile|Resource|RuleSet|Source|ValueSet)\\s?(:)\\s+([A-Za-z0-9_-]+)\\b",
           "captures": {
             "1": {
               "name": "keyword.control.fsh"
