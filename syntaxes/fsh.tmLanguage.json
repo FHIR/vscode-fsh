@@ -47,7 +47,7 @@
         },
         {
           "name": "keyword.reserved.fsh",
-          "match": "\\b(?<=\\s|^)(and|codes|contains|descendent-of|exclude|exists|generalizes|include|in|is-a|is-not-a|named|not-in|only|or|regex|(?<=\\bfrom\\s*)system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
+          "match": "\\b(?<=\\s|^)(and|codes|contains|descendent-of|exclude|exists|generalizes|include|in|is-a|is-not-a|named|not-in|or|regex|(?<=\\bfrom\\s*)system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
         },
         {
           "match": "\\b(?<=\\s|^)(from|obeys)\\s+(\\S+)((\\s+and\\s+(\\S+))*)",
@@ -69,6 +69,20 @@
                   "match": "\\S+"
                 }
               ]
+            }
+          }
+        },
+        {
+          "match": "\\b(?<=\\s|^)(only)\\s+([A-Za-z0-9_-]+\\b(?!\\())?",
+          "captures": {
+            "1": {
+              "name": "keyword.reserved.fsh"
+            },
+            "2": {
+              "name": "entity.name.type.fsh"
+            },
+            "3": {
+              "name": "entity.name.type.fsh"
             }
           }
         },
