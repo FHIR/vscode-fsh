@@ -29,11 +29,91 @@
       "patterns": [
         {
           "name": "keyword.control.fsh",
-          "match": "\\b(Alias|CodeSystem|Expression|Extension|Description|Id|Instance|InstanceOf|Invariant|Logical|Mapping|Mixins|Parent|Profile|Resource|RuleSet|Severity|Source|Target|Title|Usage|ValueSet|XPath)(?=\\s*:)\\b"
+          "match": "\\b(Alias|Expression|Description|Mixins|Severity|Target|Title|Usage|XPath)(?=\\s*:)\\b"
+        },
+        {
+          "match": "\\b(CodeSystem|Extension|Id|Instance|InstanceOf|Invariant|Logical|Mapping|Parent|Profile|Resource|RuleSet|Source|ValueSet)\\s?(:)\\s+([A-Za-z0-9_.:/-]+)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.control.fsh"
+            },
+            "2": {
+              "name": "keyword.tokens.fsh"
+            },
+            "3": {
+              "name": "entity.name.type.fsh"
+            }
+          }
         },
         {
           "name": "keyword.reserved.fsh",
-          "match": "\\b(?<=\\s|^)(and|codes|contains|descendent-of|exclude|exists|from|generalizes|include|in|insert|is-a|is-not-a|named|not-in|obeys|only|or|regex|(?<=\\bfrom\\s*)system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
+          "match": "\\b(?<=\\s|^)(and|codes|contains|descendent-of|exclude|exists|generalizes|include|in|is-a|is-not-a|named|not-in|or|regex|(?<=\\bfrom\\s*)system|units|valueset|where|D|MS|N|SU|TU|\\?!)(?=\\s)\\b"
+        },
+        {
+          "match": "\\b(?<=\\s|^)(from|obeys)\\s+(\\S+)((\\s+and\\s+(\\S+))*)",
+          "captures": {
+            "1": {
+              "name": "keyword.reserved.fsh"
+            },
+            "2": {
+              "name": "entity.name.type.fsh"
+            },
+            "3": {
+              "patterns": [
+                {
+                  "name": "keyword.reserved.fsh",
+                  "match": "(and)"
+                },
+                {
+                  "name": "entity.name.type.fsh",
+                  "match": "\\S+"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "match": "\\b(?<=\\s|^)(only)\\s+([A-Za-z0-9_-]+\\b(?!\\())?",
+          "captures": {
+            "1": {
+              "name": "keyword.reserved.fsh"
+            },
+            "2": {
+              "name": "entity.name.type.fsh"
+            },
+            "3": {
+              "name": "entity.name.type.fsh"
+            }
+          }
+        },
+        {
+          "begin": "\\b(insert)\\s+(\\S+)\\s*\\(",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.reserved.fsh"
+            },
+            "2": {
+              "name": "entity.name.type.fsh"
+            }
+          },
+          "end": "(?<!\\\\)\\)",
+          "patterns": [
+            {
+              "name": "variable.parameter.fsh",
+              "match": "([^\\s\\),]+)"
+            }
+          ]
+        },
+        {
+          "match": "\\b(insert)\\s+(\\S+)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.reserved.fsh"
+            },
+            "2": {
+              "name": "entity.name.type.fsh"
+            }
+          }
         },
         {
           "name": "keyword.reserved.fsh",
@@ -51,11 +131,21 @@
             "0": {
               "name": "keyword.reserved.fsh"
             }
-          }
+          },
+          "patterns": [
+            {
+              "name": "keyword.reserved.fsh",
+              "match": "(or)"
+            },
+            {
+              "name": "entity.name.type.fsh",
+              "match": "([^\\s\\)]+)"
+            }
+          ]
         },
         {
           "name": "keyword.tokens.fsh",
-          "match": "\\*|->|=|\\+|:"
+          "match": "((?<!\\.)\\*)|->|=|\\+|:"
         }
       ]
     },
@@ -96,6 +186,10 @@
         {
           "name": "constant.numeric.fsh",
           "match": "\\b(?<=[\\s,]|^)(-?\\d+(\\.\\d+)?)(?=[\\s,])\\b"
+        },
+        {
+          "name": "constant.numeric.fsh",
+          "match": "\\b(\\d*\\.\\.(\\d+|\\*)?)\\b"
         }
       ]
     },
@@ -113,6 +207,14 @@
           "name": "constant.numeric.ucum.unit.fsh",
           "begin": "'",
           "end": "'"
+        },
+        {
+          "name": "constant.numeric.code.fsh",
+          "match": "\\$[^\\s]*"
+        },
+        {
+          "name": "constant.character.escape.fsh",
+          "match": "(\\^\\S+)"
         }
       ]
     },
