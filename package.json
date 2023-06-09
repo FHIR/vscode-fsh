@@ -134,8 +134,7 @@
     "mocha": "^9.2.2",
     "nock": "^13.0.11",
     "prettier": "^2.2.1",
-    "typescript": "^4.2.2",
-    "vscode-test": "^1.5.1"
+    "typescript": "^4.2.2"
   },
   "dependencies": {
     "antlr4": "~4.8.0",
