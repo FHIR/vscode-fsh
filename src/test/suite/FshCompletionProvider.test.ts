@@ -1014,8 +1014,8 @@ suite('FshCompletionProvider', () => {
     });
 
     test('should update from the specified version of hl7.fhir.r5.core when there is a SUSHI config', async () => {
-      // create sushi-config.yml with fhirVersion: 4.8.2
-      const configContents = defaultConfig.replace('4.0.1', '4.8.2');
+      // create sushi-config.yml with fhirVersion: 5.0.0
+      const configContents = defaultConfig.replace('4.0.1', '5.0.0');
       const configPath = path.join(
         vscode.workspace.workspaceFolders[0].uri.fsPath,
         'sushi-config.yml'
@@ -1024,7 +1024,7 @@ suite('FshCompletionProvider', () => {
       // update entities using specified version
       instance.cachePath = path.join(TEST_ROOT, '.fhir', 'packages');
       await instance.updateFhirEntities();
-      assert.hasAllKeys(instance.fhirEntities, ['hl7.fhir.r5.core#4.8.2']);
+      assert.hasAllKeys(instance.fhirEntities, ['hl7.fhir.r5.core#5.0.0']);
     });
 
     test('should show an information message when a SUSHI config exists, but specifies a FHIR version not present in the cache', async () => {

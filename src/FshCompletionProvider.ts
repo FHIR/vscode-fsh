@@ -373,7 +373,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
                 return null;
               }
             })
-            .find(version => /current|4\.0\.1|4\.[1-9]\d*.\d+/.test(version));
+            .find(version => /current|4\.0\.1|4\.[1-9]\d*\.\d+|5\.\d+\.\d+/.test(version));
           this.fhirVersion = fhirVersion;
           if (!fhirVersion) {
             fhirVersion = '4.0.1';
