@@ -120,7 +120,7 @@
           "match": "(\\(\\s*)(exactly|example|extensible|preferred|required)(\\s*\\))"
         },
         {
-          "begin": "\\b(Reference|Canonical)\\s*\\(",
+          "begin": "\\b(Reference|Canonical|CodeableReference)\\s*\\(",
           "beginCaptures": {
             "0": {
               "name": "keyword.reserved.fsh"
