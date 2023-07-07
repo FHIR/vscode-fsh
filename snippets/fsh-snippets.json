@@ -24,6 +24,7 @@
 			"Id: ${2:${1/(([A-Z]*)[_]([A-Z]*))|(([A-Z]*[a-z0-9]+)([A-Z]+))|(([A-Z]+)([A-Z0-9])([a-z]))/${2:/downcase}${5:/downcase}${8:/downcase}-${3:/downcase}${6:/downcase}${9:/downcase}$10/g}}",
 			"Title: \"${3:${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}}\"",
 			"Description: \"$4\"",
+			"Context: $5",
 			"* $0"
 		],
 		"description": "Create a FSH Extension"
@@ -39,6 +40,7 @@
 			"Id: ${3:$1}",
 			"Title: \"${4:${1/[_]|(([a-z0-9])([A-Z]))|(([A-Z])([A-Z0-9])([a-z]))/$2$5 $3$6$7/g}}\"",
 			"Description: \"$5\"",
+			"Characteristics: $6",
 			"* $0"
 		],
 		"description": "Create a FSH Resource"
