@@ -1229,6 +1229,51 @@ suite('FshCompletionProvider', () => {
       // since we got these items from the cache, we shouldn't have read any files
       expect(readFileSpy).to.have.been.called.exactly(0);
     });
+
+    test('should load packages specified with a patch wildcard', async () => {
+      const dependencies = [{ packageId: 'some.other.package', version: '1.0.x' }];
+      instance.cachePath = path.join(TEST_ROOT, '.fhir', 'packages');
+      const items = await instance.makeItemsFromDependencies(dependencies);
+      assert.hasAllKeys(items, ['some.other.package#1.0.4']);
+
+      const expectedProfile: EnhancedCompletionItem = new vscode.CompletionItem('MyProfile');
+      expectedProfile.detail = 'some.other.package Profile';
+      expectedProfile.type = 'MyResource';
+      const expectedExtension = new vscode.CompletionItem('MyExtension');
+      expectedExtension.detail = 'some.other.package Extension';
+      const expectedNameLogical = new vscode.CompletionItem('MyLogical');
+      expectedNameLogical.detail = 'some.other.package Logical';
+      const expectedUrlLogical = new vscode.CompletionItem('https://example.org/fhir/MyLogical');
+      expectedUrlLogical.detail = 'some.other.package Logical';
+
+      assert.equal(items.get('some.other.package#1.0.4').profiles.size, 1);
+      assert.deepInclude(items.get('some.other.package#1.0.4').profiles, expectedProfile);
+      assert.equal(items.get('some.other.package#1.0.4').extensions.size, 1);
+      assert.deepInclude(items.get('some.other.package#1.0.4').extensions, expectedExtension);
+      assert.equal(items.get('some.other.package#1.0.4').logicals.size, 2);
+      assert.deepInclude(items.get('some.other.package#1.0.4').logicals, expectedNameLogical);
+      assert.deepInclude(items.get('some.other.package#1.0.4').logicals, expectedUrlLogical);
+
+      assert.equal(instance.cachedFhirEntities.get('some.other.package#1.0.4').profiles.size, 1);
+      assert.deepInclude(
+        instance.cachedFhirEntities.get('some.other.package#1.0.4').profiles,
+        expectedProfile
+      );
+      assert.equal(instance.cachedFhirEntities.get('some.other.package#1.0.4').extensions.size, 1);
+      assert.deepInclude(
+        instance.cachedFhirEntities.get('some.other.package#1.0.4').extensions,
+        expectedExtension
+      );
+      assert.equal(instance.cachedFhirEntities.get('some.other.package#1.0.4').logicals.size, 2);
+      assert.deepInclude(
+        instance.cachedFhirEntities.get('some.other.package#1.0.4').logicals,
+        expectedNameLogical
+      );
+      assert.deepInclude(
+        instance.cachedFhirEntities.get('some.other.package#1.0.4').logicals,
+        expectedUrlLogical
+      );
+    });
   });
 
   suite('#buildElementsFromSnapshot', () => {
