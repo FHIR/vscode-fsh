@@ -16,6 +16,7 @@ import { EntityType, FshDefinitionProvider } from './FshDefinitionProvider';
 import YAML from 'yaml';
 import path from 'path';
 import os from 'os';
+import { maxSatisfying } from 'semver';
 
 export type FhirContents = {
   resourceType: string;
@@ -418,7 +419,16 @@ export class FshCompletionProvider implements CompletionItemProvider {
     const updatedEntities: FshCompletionProvider['fhirEntities'] = new Map();
     await Promise.all(
       dependencies.map(async dependency => {
-        const packageKey = `${dependency.packageId}#${dependency.version}`;
+        let resolvedVersion: string;
+        if (/^\d+\.\d+\.x$/.test(dependency.version)) {
+          resolvedVersion = await this.resolvePatchVersion(
+            dependency.packageId,
+            dependency.version
+          );
+        } else {
+          resolvedVersion = dependency.version;
+        }
+        const packageKey = `${dependency.packageId}#${resolvedVersion}`;
         if (this.cachedFhirEntities.has(packageKey)) {
           // we already have it. assume it doesn't need to be reloaded
           updatedEntities.set(packageKey, this.cachedFhirEntities.get(packageKey));
@@ -428,11 +438,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
           // for each json file in the package, open it up and see if it's something we can use.
           // there are naming conventions, but there's no need to rely on those.
           // we use a similar decision scheme to SUSHI's FHIRDefinitions.add() method.
-          const packagePath = path.join(
-            this.cachePath,
-            `${dependency.packageId}#${dependency.version}`,
-            'package'
-          );
+          const packagePath = path.join(this.cachePath, packageKey, 'package');
           const packageFiles = await workspace.fs.readDirectory(Uri.file(packagePath));
           const packageEntities: EntitySet = {
             profiles: new Map(),
@@ -543,13 +549,23 @@ export class FshCompletionProvider implements CompletionItemProvider {
           updatedEntities.set(packageKey, packageEntities);
         } catch (err) {
           window.showInformationMessage(
-            `Could not load definition information for package ${dependency.packageId}#${dependency.version}`
+            `Could not load definition information for package ${packageKey}`
           );
         }
         return;
       })
     );
     return updatedEntities;
+  }
+
+  public async resolvePatchVersion(packageId: string, version: string): Promise<string> {
+    const cacheContents = await workspace.fs.readDirectory(Uri.file(this.cachePath));
+    const potentialVersions = cacheContents
+      .filter(
+        ([fileName, type]) => type == FileType.Directory && fileName.startsWith(`${packageId}#`)
+      )
+      .map(([fileName]) => fileName.slice(fileName.indexOf('#') + 1));
+    return maxSatisfying(potentialVersions, version) ?? version;
   }
 
   public buildElementsFromSnapshot(snapshotElements: any[]): ElementInfo[] {
