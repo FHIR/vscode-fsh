@@ -100,7 +100,7 @@
           "patterns": [
             {
               "name": "string.quoted.other.bracketed.fsh",
-              "begin": "\\[\\[",
+              "begin": "(?<=[^\\\\][,\\(]\\s*)\\[\\[",
               "end": "\\]\\](?=\\s*[,)])"
             },
             {
