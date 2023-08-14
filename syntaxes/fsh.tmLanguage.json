@@ -87,7 +87,7 @@
           }
         },
         {
-          "begin": "\\b(insert)\\s+(\\S+)\\s*\\(",
+          "begin": "\\b(insert)\\s+(\\S*?)\\s*\\(",
           "beginCaptures": {
             "1": {
               "name": "keyword.reserved.fsh"
@@ -98,6 +98,11 @@
           },
           "end": "(?<!\\\\)\\)",
           "patterns": [
+            {
+              "name": "string.quoted.other.bracketed.fsh",
+              "begin": "(?<=[^\\\\][,\\(]\\s*)\\[\\[",
+              "end": "\\]\\](?=\\s*[,)])"
+            },
             {
               "name": "variable.parameter.fsh",
               "match": "([^\\s\\),]+)"
