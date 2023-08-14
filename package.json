@@ -2,7 +2,7 @@
   "name": "vscode-language-fsh",
   "displayName": "FHIR Shorthand",
   "description": "FHIR Shorthand (FSH) Language Support by MITRE",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "author": "The MITRE Corporation",
   "license": "Apache-2.0",
   "publisher": "MITRE-Health",
