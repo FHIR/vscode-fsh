@@ -29,7 +29,56 @@
       "patterns": [
         {
           "name": "keyword.control.fsh",
-          "match": "\\b(Alias|Characteristics|Context|Expression|Description|Mixins|Severity|Target|Title|Usage|XPath)(?=\\s*:)\\b"
+          "match": "\\b(Alias|Characteristics|Expression|Description|Mixins|Severity|Target|Title|Usage|XPath)(?=\\s*:)\\b"
+        },
+        {
+          "begin": "\\b(Context)\\s?(:)\\s+",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.reserved.fsh"
+            },
+            "2": {
+              "name": "keyword.tokens.fsh"
+            }
+          },
+          "end": "((\"(?:\\\\.|[^\\\\\"])*\")|([^\"][^\\s,]+))\\s+(?!,)",
+          "endCaptures": {
+            "2": {
+              "name": "string.quoted.double.final.fsh"
+            },
+            "3": {
+              "name": "entity.name.path.final.fsh"
+            }
+          },
+          "patterns": [
+            {
+              "name": "string.quoted.double.fsh",
+              "begin": "\"",
+              "end": "\"(\\s*,\\s)",
+              "endCaptures": {
+                "1": {
+                  "name": "keyword.tokens.fsh"
+                }
+              },
+              "patterns": [
+                {
+                  "name": "constant.character.escape.fsh",
+                  "match": "\\\\."
+                }
+              ]
+            },
+            {
+              "match": "([^\\s,]+)\\s*(,)\\s*",
+              "captures": {
+                "1": {
+                  "name": "entity.name.path.fsh"
+                },
+                "2": {
+                  "name": "keyword.tokens.fsh"
+                }
+              }
+            }
+          ]
         },
         {
           "match": "\\b(CodeSystem|Extension|Id|Instance|InstanceOf|Invariant|Logical|Mapping|Parent|Profile|Resource|RuleSet|Source|ValueSet)\\s?(:)\\s+([A-Za-z0-9_.:/-]+)\\b",
