@@ -44,10 +44,10 @@
           "end": "((\"(?:\\\\.|[^\\\\\"])*\")|([^\"][^\\s,]+))\\s+(?!,)",
           "endCaptures": {
             "2": {
-              "name": "string.quoted.double.final.fsh"
+              "name": "string.quoted.double.fsh"
             },
             "3": {
-              "name": "entity.name.path.final.fsh"
+              "name": "entity.name.type.fsh"
             }
           },
           "patterns": [
@@ -71,7 +71,7 @@
               "match": "([^\\s,]+)\\s*(,)\\s*",
               "captures": {
                 "1": {
-                  "name": "entity.name.path.fsh"
+                  "name": "entity.name.type.fsh"
                 },
                 "2": {
                   "name": "keyword.tokens.fsh"
