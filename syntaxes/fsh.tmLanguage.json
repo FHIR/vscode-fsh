@@ -35,7 +35,7 @@
           "begin": "\\b(Context)\\s?(:)\\s+",
           "beginCaptures": {
             "1": {
-              "name": "keyword.reserved.fsh"
+              "name": "keyword.control.fsh"
             },
             "2": {
               "name": "keyword.tokens.fsh"
