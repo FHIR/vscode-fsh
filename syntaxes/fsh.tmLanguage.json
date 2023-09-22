@@ -41,7 +41,7 @@
               "name": "keyword.tokens.fsh"
             }
           },
-          "end": "((\"(?:\\\\.|[^\\\\\"])*\")|([^\"][^\\s,]+))\\s+(?!,)",
+          "end": "((\"(?:\\\\.|[^\\\\\"])*\")|([^\"\\s][^\\s,]+))\\s+(?!,)",
           "endCaptures": {
             "2": {
               "name": "string.quoted.double.fsh"
@@ -54,7 +54,7 @@
             {
               "name": "string.quoted.double.fsh",
               "begin": "\"",
-              "end": "\"(\\s*,\\s)",
+              "end": "\"\\s*(,)\\s*",
               "endCaptures": {
                 "1": {
                   "name": "keyword.tokens.fsh"
