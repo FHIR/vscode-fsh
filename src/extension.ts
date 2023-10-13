@@ -77,24 +77,23 @@ export const SPECIAL_URLS = new Map<string, Uri>([
 // Documentation URLs are based on the FHIR version supplied in the project configuration.
 // http://hl7.org/fhir/directory.html provides the list of FHIR versions with available documentation.
 // SUSHI only supports versions 4.0.1 and later, so only those are supported here.
-// A user might leave out the -snapshot1 portion of versions, but in those cases,
-// the snapshot documentation is probably still useful.
 export const DOCUMENTATION_VERSION_PATHS = new Map<string, string>([
   ['4.0.1', '/R4'],
   ['4.1.0', '/2021Mar'],
   ['4.3.0-snapshot1', '/4.3.0-snapshot1'],
-  ['4.3.0', '/4.3.0-snapshot1'],
+  ['4.3.0', '/R4B'],
   ['4.2.0', '/2020Feb'],
   ['4.4.0', '/2020May'],
   ['4.5.0', '/2020Sep'],
   ['4.6.0', '/2021May'],
   ['5.0.0-snapshot1', '/5.0.0-snapshot1'],
-  ['5.0.0', '/5.0.0-snapshot1']
+  ['5.0.0-ballot', '/2022Sep'],
+  ['5.0.0-snapshot3', '/5.0.0-snapshot3'],
+  ['5.0.0-draft-final', '/5.0.0-draft-final'],
+  ['5.0.0', '/R5']
 ]);
 
-export function activate(
-  context: ExtensionContext
-): {
+export function activate(context: ExtensionContext): {
   definitionProviderInstance: FshDefinitionProvider;
   completionProviderInstance: FshCompletionProvider;
 } {
