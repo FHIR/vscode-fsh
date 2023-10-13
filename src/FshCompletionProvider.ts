@@ -597,7 +597,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
                     )}`,
                     types: [availableType?.code],
                     children: []
-                  } as ElementInfo)
+                  }) as ElementInfo
               )
             );
           }

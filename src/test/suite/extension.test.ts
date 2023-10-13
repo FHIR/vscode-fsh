@@ -6,10 +6,11 @@ import nock from 'nock';
 import * as vscode from 'vscode';
 import * as myExtension from '../../extension';
 
-suite('Extension Test Suite', () => {
+suite('Extension Test Suite', function () {
   // Note: The vscode.Position class starts at 0.
   // That is, the first line of a file is line 0, and
   // the first character of a line is character 0.
+  this.timeout(3000);
 
   suite('#getFhirDocumentationName', function () {
     test('should get a name with alphanumeric characters', async () => {

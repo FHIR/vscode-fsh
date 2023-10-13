@@ -92,9 +92,7 @@ export const DOCUMENTATION_VERSION_PATHS = new Map<string, string>([
   ['5.0.0', '/5.0.0-snapshot1']
 ]);
 
-export function activate(
-  context: ExtensionContext
-): {
+export function activate(context: ExtensionContext): {
   definitionProviderInstance: FshDefinitionProvider;
   completionProviderInstance: FshCompletionProvider;
 } {
