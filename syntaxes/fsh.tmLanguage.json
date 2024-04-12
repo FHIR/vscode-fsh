@@ -264,7 +264,7 @@
         },
         {
           "name": "constant.numeric.code.fsh",
-          "match": "\\$[^\\s]*"
+          "match": "\\$[^\\s\\\"]*"
         },
         {
           "name": "constant.character.escape.fsh",
