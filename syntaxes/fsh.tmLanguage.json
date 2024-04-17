@@ -263,8 +263,8 @@
           "end": "'"
         },
         {
-          "name": "constant.numeric.code.fsh",
-          "match": "\\$[^\\s\\\"]*"
+          "name": "string.unquoted.url.fsh",
+          "match": "\\$[^\\s\\#]*"
         },
         {
           "name": "constant.character.escape.fsh",
