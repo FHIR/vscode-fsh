@@ -2,6 +2,15 @@
 
 A language support extension for the FHIR Shorthand (FSH) language.
 
+## FHIR Foundation Project Statement
+
+- Maintainers: This project is maintained by The MITRE Corporation.
+- Issues / Discussion: For FSH Language Extension for VS Code issues, such as bug reports, comments, suggestions, questions, and feature requests, visit [FSH Language Extension for VS Code GitHub Issues](https://github.com/standardhealth/vscode-language-fsh/issues). For discussion of FHIR Shorthand and its associated projects, visit the FHIR Community Chat @ https://chat.fhir.org. The [#shorthand stream](https://chat.fhir.org/#narrow/stream/215610-shorthand) is used for all FHIR Shorthand questions and discussion.
+- License: All contributions to this project will be released under the Apache 2.0 License, and a copy of this license can be found in [LICENSE](LICENSE).
+- Contribution Policy: The FSH Language Extension for VS Code Contribution Policy can be found in [CONTRIBUTING.md](CONTRIBUTING.md).
+- Security Information: The FSH Language Extension for VS Code Security Information can be found in [SECURITY.md](SECURITY.md).
+- Compliance Information: This extension offers autocompletion capabilities that use FHIR R4, FHIR R4B, and FHIR R5 definitions. Definitions from previous versions of FHIR are not used by this extension.
+
 ## How to Download
 
 In Visual Studio Code, go to the VS Code Extension Marketplace and download the
