@@ -71,5 +71,5 @@
     /* Advanced Options */
     // "resolveJsonModule": true              /* Include modules imported with '.json' extension */
   },
-  "exclude": ["node_modules", "out"]
+  "exclude": ["node_modules", "out", "eslint.config.mjs"]
 }
