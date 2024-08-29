@@ -4,6 +4,7 @@ import {
   Position,
   ProviderResult,
   CompletionItem,
+  CompletionItemLabel,
   CompletionList,
   Range,
   workspace,
@@ -50,12 +51,12 @@ type SushiConfiguration = {
 };
 
 type EntitySet = {
-  profiles: Map<string, EnhancedCompletionItem>;
-  resources: Map<string, EnhancedCompletionItem>;
-  extensions: Map<string, EnhancedCompletionItem>;
-  logicals: Map<string, EnhancedCompletionItem>;
-  codeSystems: Map<string, EnhancedCompletionItem>;
-  valueSets: Map<string, EnhancedCompletionItem>;
+  profiles: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
+  resources: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
+  extensions: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
+  logicals: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
+  codeSystems: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
+  valueSets: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
 };
 
 export class FshCompletionProvider implements CompletionItemProvider {
