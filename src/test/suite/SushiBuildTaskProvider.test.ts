@@ -2,7 +2,7 @@ import chai from 'chai';
 import * as vscode from 'vscode';
 import { getSushiBuildTask } from '../../SushiBuildTaskProvider';
 
-const { assert } = chai;
+const assert: Chai.AssertStatic = chai.assert;
 
 suite('SushiBuildTaskProvider', () => {
   suite('getSushiBuildTask', () => {
