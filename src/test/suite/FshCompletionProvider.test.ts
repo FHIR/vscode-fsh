@@ -13,7 +13,8 @@ import {
 import { FshDefinitionProvider } from '../../FshDefinitionProvider';
 
 chai.use(spies);
-const { assert, expect } = chai;
+const { expect } = chai;
+const assert: Chai.AssertStatic = chai.assert;
 const { EOL } = os;
 
 // Since the tests actually run from the build output directory,
