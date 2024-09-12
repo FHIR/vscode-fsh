@@ -20,7 +20,7 @@ async function main() {
       extensionTestsPath,
       launchArgs: [workspacePath, '--disable-extensions']
     });
-  } catch (err) {
+  } catch {
     console.error('Failed to run tests');
     process.exit(1);
   }

@@ -8,7 +8,8 @@ import * as parser from '../../parser';
 import { FshDefinitionProvider, NameInfo } from '../../FshDefinitionProvider';
 
 chai.use(spies);
-const { assert, expect } = chai;
+const { expect } = chai;
+const assert: Chai.AssertStatic = chai.assert;
 
 suite('FshDefinitionProvider', () => {
   let extension: vscode.Extension<any>;

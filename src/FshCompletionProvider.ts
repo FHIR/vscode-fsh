@@ -4,6 +4,7 @@ import {
   Position,
   ProviderResult,
   CompletionItem,
+  CompletionItemLabel,
   CompletionList,
   Range,
   workspace,
@@ -50,12 +51,12 @@ type SushiConfiguration = {
 };
 
 type EntitySet = {
-  profiles: Map<string, EnhancedCompletionItem>;
-  resources: Map<string, EnhancedCompletionItem>;
-  extensions: Map<string, EnhancedCompletionItem>;
-  logicals: Map<string, EnhancedCompletionItem>;
-  codeSystems: Map<string, EnhancedCompletionItem>;
-  valueSets: Map<string, EnhancedCompletionItem>;
+  profiles: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
+  resources: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
+  extensions: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
+  logicals: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
+  codeSystems: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
+  valueSets: Map<string | CompletionItemLabel, EnhancedCompletionItem>;
 };
 
 export class FshCompletionProvider implements CompletionItemProvider {
@@ -350,7 +351,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
       // first check if packagePath is valid. if not, give up right away
       try {
         await workspace.fs.stat(Uri.file(this.cachePath));
-      } catch (err) {
+      } catch {
         throw new Error(`Couldn't load FHIR definitions from path: ${this.cachePath}`);
       }
       // then, see if we have a configuration. if so, use it to try to set the dependencies.
@@ -400,7 +401,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
               }
             );
           }
-        } catch (err) {
+        } catch {
           // there was a problem parsing the configuration. so, just ignore it, and hope we can find the default FHIR package.
         }
       }
@@ -538,7 +539,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
                       });
                       break;
                   }
-                } catch (err) {
+                } catch {
                   // it might be unparseable JSON, or a file may have been removed between
                   // readDirectory and readFile. either way, it's okay. just keep going.
                 }
@@ -547,7 +548,7 @@ export class FshCompletionProvider implements CompletionItemProvider {
           );
           this.cachedFhirEntities.set(packageKey, packageEntities);
           updatedEntities.set(packageKey, packageEntities);
-        } catch (err) {
+        } catch {
           window.showInformationMessage(
             `Could not load definition information for package ${packageKey}`
           );
