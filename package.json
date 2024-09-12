@@ -3,7 +3,7 @@
   "displayName": "FHIR Shorthand",
   "description": "FHIR Shorthand (FSH) Language Support by HL7",
   "version": "1.16.1",
-  "author": "HL7 community",
+  "author": "Health Level Seven International",
   "license": "Apache-2.0",
   "publisher": "MITRE-Health",
   "icon": "images/docs/fsh-icon.png",
