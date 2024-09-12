@@ -4,7 +4,7 @@ A language support extension for the FHIR Shorthand (FSH) language.
 
 ## FHIR Foundation Project Statement
 
-- Maintainers: This project is maintained by The MITRE Corporation.
+- Maintainers: This project is maintained by the HL7 community.
 - Issues / Discussion: For FSH Language Extension for VS Code issues, such as bug reports, comments, suggestions, questions, and feature requests, visit [FSH Language Extension for VS Code GitHub Issues](https://github.com/standardhealth/vscode-language-fsh/issues). For discussion of FHIR Shorthand and its associated projects, visit the FHIR Community Chat @ https://chat.fhir.org. The [#shorthand stream](https://chat.fhir.org/#narrow/stream/215610-shorthand) is used for all FHIR Shorthand questions and discussion.
 - License: All contributions to this project will be released under the Apache 2.0 License, and a copy of this license can be found in [LICENSE](LICENSE).
 - Contribution Policy: The FSH Language Extension for VS Code Contribution Policy can be found in [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -136,3 +136,19 @@ The files to copy are:
 - FSHListener.js
 - FSHParser.js
 - FSHVisitor.js
+
+# License
+
+Copyright 2019-2024 Health Level Seven International
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
