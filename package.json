@@ -5,7 +5,7 @@
   "version": "1.16.1",
   "author": "Health Level Seven International",
   "license": "Apache-2.0",
-  "publisher": "MITRE-Health",
+  "publisher": "FHIR-Shorthand",
   "icon": "images/docs/fsh-icon.png",
   "repository": {
     "type": "git",
