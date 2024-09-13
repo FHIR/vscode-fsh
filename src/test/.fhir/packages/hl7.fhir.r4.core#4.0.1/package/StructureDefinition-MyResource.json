@@ -1,8 +1,0 @@
-{
-    "resourceType": "StructureDefinition",
-    "kind": "resource",
-    "type": "MyResource",
-    "derivation": "specialization",
-    "name": "MyResource",
-    "id": "MyResource"
-}
