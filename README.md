@@ -4,7 +4,7 @@ This extension is deprecated, and users should install the new identical extensi
 
 If you do not already have this extension installed, please install the fhir-shorthand.vscode-language-fsh version of the extension.
 
-If you do already have this extension installed, it should automatically install the fhir-shorthand.vscode-language-fsh version as a dependency once you are on version 1.17.0. Once the fhir-shorthand.vscode-language-fsh extension is installed, feel free to uninstall this mitre-health.vscode-language-fsh extension, since it is not functional.
+If you do already have this extension installed, once you update to version 1.17.0, this extension should automatically install the fhir-shorthand.vscode-language-fsh extension and uninstall the outdated extension. If either of step does not happen for an unexpected reason, please manually install the new fhir-shorthand.vscode-language-fsh extension and uninstall this mitre-health.vscode-language-fsh extension, as it is no longer functional and.
 
 # License
 
