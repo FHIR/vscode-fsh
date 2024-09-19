@@ -1,10 +1,10 @@
 # FSH Language Support for VS Code [DEPRECATED]
 
-This extension is deprecated, and users should install the new identical extension with the identifier [fhir-shorthand.vscode-language-fsh](https://marketplace.visualstudio.com/items?itemName=FHIR-Shorthand.vscode-language-fsh). Only the publisher name has changed.
+This extension is deprecated, and users should install the new identical extension with the identifier [fhir-shorthand.vscode-fsh](https://marketplace.visualstudio.com/items?itemName=FHIR-Shorthand.vscode-fsh). Only the publisher name has changed.
 
-If you do not already have this extension installed, please install the fhir-shorthand.vscode-language-fsh version of the extension.
+If you do not already have this extension installed, please install the fhir-shorthand.vscode-fsh version of the extension.
 
-If you do already have this extension installed, it should automatically install the fhir-shorthand.vscode-language-fsh version as a dependency once you are on version 1.17.0. Once the fhir-shorthand.vscode-language-fsh extension is installed, feel free to uninstall this mitre-health.vscode-language-fsh extension, since it is not functional.
+If you do already have this extension installed, it should automatically install the fhir-shorthand.vscode-fsh version as a dependency once you are on version 1.17.0. Once the fhir-shorthand.vscode-fsh extension is installed, feel free to uninstall this mitre-health.vscode-language-fsh extension, since it is not functional.
 
 # License
 
