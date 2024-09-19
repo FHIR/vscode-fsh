@@ -14,7 +14,7 @@ A language support extension for the FHIR Shorthand (FSH) language.
 ## How to Download
 
 In Visual Studio Code, go to the VS Code Extension Marketplace and download the
-`vscode-language-fsh` extension. Once activated, this extension's features should
+`vscode-fsh` extension. Once activated, this extension's features should
 be automatically implemented.
 
 ## Language Features
