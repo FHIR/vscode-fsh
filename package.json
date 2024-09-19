@@ -2,17 +2,17 @@
   "name": "vscode-language-fsh",
   "displayName": "FHIR Shorthand",
   "description": "FHIR Shorthand (FSH) Language Support by HL7",
-  "version": "1.16.1",
+  "version": "1.18.0",
   "author": "Health Level Seven International",
   "license": "Apache-2.0",
-  "publisher": "MITRE-Health",
+  "publisher": "FHIR-Shorthand",
   "icon": "images/docs/fsh-icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/standardhealth/vscode-language-fsh"
   },
   "engines": {
-    "vscode": "^1.39.0"
+    "vscode": "^1.92.0"
   },
   "activationEvents": [
     "onLanguage:fsh",
