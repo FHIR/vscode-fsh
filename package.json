@@ -1,6 +1,6 @@
 {
   "name": "vscode-fsh",
-  "displayName": "FHIR Shorthand",
+  "displayName": "HL7 FHIR Shorthand",
   "description": "FHIR Shorthand (FSH) Language Support by HL7",
   "version": "1.18.0",
   "author": "Health Level Seven International",
