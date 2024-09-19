@@ -1,7 +1,7 @@
 {
   "name": "vscode-language-fsh",
   "displayName": "FHIR Shorthand [DEPRECATED]",
-  "description": "FHIR Shorthand (FSH) Language Support by HL7 [DEPRECATED]",
+  "description": "FHIR Shorthand (FSH) Language Support [DEPRECATED]",
   "version": "1.17.0",
   "author": "Health Level Seven International",
   "license": "Apache-2.0",
