@@ -1,1 +1,0 @@
-This is a README file, not a FSH file.

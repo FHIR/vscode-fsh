@@ -1,12 +1,11 @@
 {
-  "name": "vscode-fsh",
-  "displayName": "HL7 FHIR Shorthand",
-  "description": "FHIR Shorthand (FSH) Language Support by HL7",
-  "version": "1.18.0",
+  "name": "vscode-language-fsh",
+  "displayName": "FHIR Shorthand [DEPRECATED]",
+  "description": "FHIR Shorthand (FSH) Language Support [DEPRECATED]",
+  "version": "1.17.0",
   "author": "Health Level Seven International",
   "license": "Apache-2.0",
-  "publisher": "FHIR-Shorthand",
-  "icon": "images/docs/fsh-icon.png",
+  "publisher": "MITRE-Health",
   "repository": {
     "type": "git",
     "url": "https://github.com/standardhealth/vscode-language-fsh"
@@ -14,135 +13,7 @@
   "engines": {
     "vscode": "^1.92.0"
   },
-  "activationEvents": [
-    "onLanguage:fsh",
-    "onCommand:workbench.action.tasks.runTask"
-  ],
-  "main": "./out/extension",
-  "categories": [
-    "Programming Languages"
-  ],
-  "contributes": {
-    "languages": [
-      {
-        "id": "fsh",
-        "aliases": [
-          "FSH",
-          "fsh"
-        ],
-        "extensions": [
-          ".fsh"
-        ],
-        "configuration": "./language-configuration.json"
-      }
-    ],
-    "grammars": [
-      {
-        "language": "fsh",
-        "scopeName": "source.fsh",
-        "path": "./syntaxes/fsh.tmLanguage.json"
-      }
-    ],
-    "snippets": [
-      {
-        "language": "fsh",
-        "path": "./snippets/fsh-snippets.json"
-      }
-    ],
-    "commands": [
-      {
-        "command": "extension.openFhir",
-        "title": "Open FHIR Documentation"
-      }
-    ],
-    "menus": {
-      "editor/context": [
-        {
-          "command": "extension.openFhir",
-          "group": "navigation",
-          "when": "editorLangId == fsh"
-        }
-      ]
-    },
-    "problemMatchers": [
-      {
-        "owner": "vscode-fsh",
-        "name": "sushi",
-        "fileLocation": "absolute",
-        "pattern": [
-          {
-            "regexp": "^(warn|error) (.+)$",
-            "severity": 1,
-            "message": 2
-          },
-          {
-            "regexp": "^  File: (.+)$",
-            "file": 1
-          },
-          {
-            "regexp": "^  Line: (\\d+)( - (\\d+))?$",
-            "line": 1
-          }
-        ]
-      }
-    ],
-    "taskDefinitions": [
-      {
-        "type": "fsh",
-        "required": [
-          "task"
-        ],
-        "properties": {
-          "task": {
-            "type": "string",
-            "description": "FSH Task"
-          }
-        }
-      }
-    ]
-  },
-  "scripts": {
-    "build": "tsc -p ./",
-    "build:watch": "tsc -watch -p ./",
-    "lint": "tsc && eslint \"**/*.{js,ts}\"",
-    "lint:fix": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix",
-    "prettier": "prettier --check \"**/*.{js,ts}\"",
-    "prettier:fix": "prettier --write \"**/*.{js,ts}\"",
-    "pretest": "npm run build",
-    "test": "node ./out/test/runTest.js",
-    "check": "npm run lint && npm run prettier && npm run test",
-    "vscode:prepublish": "tsc -p ./"
-  },
-  "devDependencies": {
-    "@eslint/eslintrc": "^3.1.0",
-    "@eslint/js": "^9.9.1",
-    "@types/antlr4": "^4.7.2",
-    "@types/chai": "^4.3.19",
-    "@types/chai-spies": "^1.0.6",
-    "@types/fs-extra": "^11.0.4",
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.7",
-    "@types/node": "^20.16.3",
-    "@types/semver": "^7.5.8",
-    "@types/vscode": "^1.92.0",
-    "@typescript-eslint/eslint-plugin": "^8.4.0",
-    "@typescript-eslint/parser": "^8.4.0",
-    "@vscode/test-electron": "^2.4.1",
-    "chai": "^4.5.0",
-    "chai-spies": "^1.1.0",
-    "eslint": "^9.9.1",
-    "eslint-config-prettier": "^9.1.0",
-    "fs-extra": "^11.2.0",
-    "glob": "^11.0.0",
-    "mocha": "^10.7.3",
-    "nock": "^13.5.5",
-    "prettier": "^3.3.3",
-    "typescript": "^5.5.4"
-  },
-  "dependencies": {
-    "antlr4": "~4.8.0",
-    "axios": "^1.7.7",
-    "semver": "^7.6.3",
-    "yaml": "^2.5.0"
-  }
+  "extensionDependencies": [
+    "fhir-shorthand.vscode-fsh"
+  ]
 }
