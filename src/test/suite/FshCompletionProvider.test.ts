@@ -27,7 +27,7 @@ suite('FshCompletionProvider', () => {
   let definitionInstance: FshDefinitionProvider;
 
   before(() => {
-    extension = vscode.extensions.getExtension('mitre-health.vscode-language-fsh');
+    extension = vscode.extensions.getExtension('fhir-shorthand.vscode-fsh');
     instance = extension?.exports.completionProviderInstance as FshCompletionProvider;
     definitionInstance = extension?.exports.definitionProviderInstance as FshDefinitionProvider;
   });
