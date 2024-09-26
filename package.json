@@ -116,7 +116,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.9.1",
-    "@types/antlr4": "^4.7.2",
+    "@types/antlr4": "^4.11.6",
     "@types/chai": "^4.3.19",
     "@types/chai-spies": "^1.0.6",
     "@types/fs-extra": "^11.0.4",
@@ -140,7 +140,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "antlr4": "~4.8.0",
+    "antlr4": "~4.13.2",
     "axios": "^1.7.7",
     "semver": "^7.6.3",
     "yaml": "^2.5.0"
