@@ -213,7 +213,7 @@ export class FshDefinitionProvider implements DefinitionProvider {
         // Update info for all files that have been modified, but not saved
         this.handleDirtyFiles();
         const name = getTargetName(document, position);
-        resolve(this.nameInformation.get(name).map(info => info.location));
+        resolve(this.nameInformation.get(name)?.map(info => info.location));
       } catch (e) {
         reject(e);
       }
@@ -231,16 +231,20 @@ function getEntityDetails(entity: any): EntityDetails {
   let aliasValue: string;
   // some entities work a little differently
   if (entity.alias()) {
-    name = entity.alias().SEQUENCE()[0].getText();
+    name = entity.alias().name().getText();
     startLine = entity.alias().start.line - 1;
-    aliasValue = entity.alias().SEQUENCE()[1]?.getText() ?? entity.alias().CODE()?.getText();
+    aliasValue = entity.alias().SEQUENCE()?.getText() ?? entity.alias().CODE()?.getText();
     entityType = 'Alias';
   } else if (entity.ruleSet()) {
     name = entity.ruleSet().RULESET_REFERENCE().getText().trim();
     startLine = entity.ruleSet().start.line - 1;
     entityType = 'RuleSet';
   } else if (entity.paramRuleSet()) {
-    const rulesetReference = entity.paramRuleSet().PARAM_RULESET_REFERENCE().getText();
+    const rulesetReference = entity
+      .paramRuleSet()
+      .paramRuleSetRef()
+      .PARAM_RULESET_REFERENCE()
+      .getText();
     const paramListStart = rulesetReference.indexOf('(');
     name = rulesetReference.slice(0, paramListStart).trim();
     startLine = entity.paramRuleSet().start.line - 1;

@@ -1,6 +1,6 @@
 import { CommonTokenStream, InputStream } from 'antlr4';
-import { FSHLexer } from './lang/FSHLexer';
-import { FSHParser } from './lang/FSHParser';
+import FSHLexer from './lang/FSHLexer';
+import FSHParser from './lang/FSHParser';
 
 // implementation in this file heavily borrows from CIMPL extension:
 // https://github.com/standardhealth/vscode-language-cimpl
