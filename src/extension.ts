@@ -6,15 +6,23 @@ import {
   ExtensionContext,
   DocumentFilter,
   TextDocument,
+  OutputChannel,
+  workspace,
   Position,
   env,
   Uri
 } from 'vscode';
 
 import axios from 'axios';
+import { ImplementationGuideDependsOn } from 'fsh-sushi/dist/fhirtypes';
+import { readJSONorXML } from 'gofsh/dist/utils';
+import { fshToFhir } from 'fsh-sushi/dist/run';
+import { fhirToFsh } from 'gofsh/dist/api';
 import { FshDefinitionProvider } from './FshDefinitionProvider';
 import { FshCompletionProvider } from './FshCompletionProvider';
 import { SushiBuildTaskProvider } from './SushiBuildTaskProvider';
+
+let fhirFSH: OutputChannel;
 
 const FSH_MODE: DocumentFilter = { language: 'fsh', scheme: 'file' };
 // For FSH entity names and keywords, show the user FSH documentation.
@@ -103,12 +111,96 @@ export function activate(context: ExtensionContext): {
     languages.registerDefinitionProvider(FSH_MODE, definitionProviderInstance),
     languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance, '.')
   );
+
+	fhirFSH = window.createOutputChannel("FHIR <=> FSH");
+
   commands.registerCommand('extension.openFhir', () =>
     openFhirDocumentation(completionProviderInstance)
   );
+
+  commands.registerCommand('extension.fshToFHIRjson', async (...file) =>
+    conversionFSHtoFHIR(...file)
+  );
+
+  commands.registerCommand('extension.FHIRtoFSH', async (...file) =>
+    conversionFHIRtoFSH(...file)
+  );
+
   completionProviderInstance.updateFhirEntities();
   tasks.registerTaskProvider('fsh', new SushiBuildTaskProvider());
   return { definitionProviderInstance, completionProviderInstance };
+}
+
+export function deactivate() {
+	fhirFSH.dispose();
+}
+
+export async function conversionFSHtoFHIR(...file: any[]) : Promise<void>
+{
+  fhirFSH.clear();
+
+  let fhirVersion = workspace.getConfiguration("vscode-fsh").get("FHIRVersion") as string;
+  let dependencies = workspace.getConfiguration("vscode-fsh").get("Dependencies") as string[];
+
+  let fshtoFHIRDependencies: ImplementationGuideDependsOn[] = [];
+
+  dependencies.forEach(dependency => {
+    let newDependency: ImplementationGuideDependsOn = { packageId: dependency.split("@")[0], version: dependency.split("@")[1] };
+    fshtoFHIRDependencies.push(newDependency);
+  });
+
+  let dependenciesParameter = fshtoFHIRDependencies.length === 0 ? undefined : fshtoFHIRDependencies;
+
+  workspace.fs.readFile(file[0]).then(bytes => {
+    let fileText = new TextDecoder().decode(bytes);
+
+    fshToFhir(fileText, {fhirVersion: fhirVersion, dependencies: dependenciesParameter}).then(result => {
+
+      result.errors.forEach(error => {
+        fhirFSH.appendLine("Error: " + error.message);
+      });
+
+      result.warnings.forEach(warning => {
+        fhirFSH.appendLine("Warning: " + warning.message);
+      });
+
+      fhirFSH.appendLine("Finished!");
+      workspace.openTextDocument({ content: JSON.stringify(result.fhir[0]), language: "json" });
+
+    });
+
+  });
+
+  fhirFSH.show();
+}
+
+export async function conversionFHIRtoFSH(...file: any[]) : Promise<void>
+{
+  fhirFSH.clear();
+
+  let dependencies = workspace.getConfiguration("vscode-fsh").get("Dependencies") as string[];
+  let dependenciesParameter = dependencies.length === 0 ? undefined : dependencies;
+
+  let fileUri: Uri = file[0];
+  let fhirObjects = readJSONorXML(fileUri.path);
+
+  let myArray: any[] = [];
+  myArray.push(fhirObjects.content);
+
+  fhirToFsh(myArray, { style: `string`, indent: true, dependencies: dependenciesParameter }).then(result => {
+    result.errors.forEach(error => {
+      fhirFSH.appendLine("Error: " + error.message);
+    });
+
+    result.warnings.forEach(warning => {
+      fhirFSH.appendLine("Warning: " + warning.message);
+    });
+
+    fhirFSH.appendLine("Finished!");
+    workspace.openTextDocument({ content: result.fsh as string, language: "fsh" });
+  });
+
+  fhirFSH.show()
 }
 
 export async function openFhirDocumentation(
