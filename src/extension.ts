@@ -112,7 +112,7 @@ export function activate(context: ExtensionContext): {
     languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance, '.')
   );
 
-	fhirFSH = window.createOutputChannel('FHIR <=> FSH');
+  fhirFSH = window.createOutputChannel('FHIR <=> FSH');
 
   commands.registerCommand('extension.openFhir', () =>
     openFhirDocumentation(completionProviderInstance)
@@ -122,9 +122,7 @@ export function activate(context: ExtensionContext): {
     conversionFSHtoFHIR(...file)
   );
 
-  commands.registerCommand('extension.FHIRtoFSH', async (...file) =>
-    conversionFHIRtoFSH(...file)
-  );
+  commands.registerCommand('extension.FHIRtoFSH', async (...file) => conversionFHIRtoFSH(...file));
 
   completionProviderInstance.updateFhirEntities();
   tasks.registerTaskProvider('fsh', new SushiBuildTaskProvider());
@@ -132,11 +130,10 @@ export function activate(context: ExtensionContext): {
 }
 
 export function deactivate() {
-	fhirFSH.dispose();
+  fhirFSH.dispose();
 }
 
-export async function conversionFSHtoFHIR(...file: any[]) : Promise<void>
-{
+export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
   fhirFSH.clear();
 
   const fhirVersion = workspace.getConfiguration('vscode-fsh').get('FHIRVersion') as string;
@@ -145,37 +142,39 @@ export async function conversionFSHtoFHIR(...file: any[]) : Promise<void>
   const fshtoFHIRDependencies: ImplementationGuideDependsOn[] = [];
 
   dependencies.forEach(dependency => {
-    const newDependency: ImplementationGuideDependsOn = { packageId: dependency.split('@')[0], version: dependency.split('@')[1] };
+    const newDependency: ImplementationGuideDependsOn = {
+      packageId: dependency.split('@')[0],
+      version: dependency.split('@')[1]
+    };
     fshtoFHIRDependencies.push(newDependency);
   });
 
-  const dependenciesParameter = fshtoFHIRDependencies.length === 0 ? undefined : fshtoFHIRDependencies;
+  const dependenciesParameter =
+    fshtoFHIRDependencies.length === 0 ? undefined : fshtoFHIRDependencies;
 
   workspace.fs.readFile(file[0]).then(bytes => {
     const fileText = new TextDecoder().decode(bytes);
 
-    fshToFhir(fileText, {fhirVersion: fhirVersion, dependencies: dependenciesParameter}).then(result => {
+    fshToFhir(fileText, { fhirVersion: fhirVersion, dependencies: dependenciesParameter }).then(
+      result => {
+        result.errors.forEach(error => {
+          fhirFSH.appendLine('Error: ' + error.message);
+        });
 
-      result.errors.forEach(error => {
-        fhirFSH.appendLine('Error: ' + error.message);
-      });
+        result.warnings.forEach(warning => {
+          fhirFSH.appendLine('Warning: ' + warning.message);
+        });
 
-      result.warnings.forEach(warning => {
-        fhirFSH.appendLine('Warning: ' + warning.message);
-      });
-
-      fhirFSH.appendLine('Finished!');
-      workspace.openTextDocument({ content: JSON.stringify(result.fhir[0]), language: 'json' });
-
-    });
-
+        fhirFSH.appendLine('Finished!');
+        workspace.openTextDocument({ content: JSON.stringify(result.fhir[0]), language: 'json' });
+      }
+    );
   });
 
   fhirFSH.show();
 }
 
-export async function conversionFHIRtoFSH(...file: any[]) : Promise<void>
-{
+export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
   fhirFSH.clear();
 
   const dependencies = workspace.getConfiguration('vscode-fsh').get('Dependencies') as string[];
@@ -187,18 +186,20 @@ export async function conversionFHIRtoFSH(...file: any[]) : Promise<void>
   const myArray: any[] = [];
   myArray.push(fhirObjects.content);
 
-  fhirToFsh(myArray, { style: 'string', indent: true, dependencies: dependenciesParameter }).then(result => {
-    result.errors.forEach(error => {
-      fhirFSH.appendLine('Error: ' + error.message);
-    });
+  fhirToFsh(myArray, { style: 'string', indent: true, dependencies: dependenciesParameter }).then(
+    result => {
+      result.errors.forEach(error => {
+        fhirFSH.appendLine('Error: ' + error.message);
+      });
 
-    result.warnings.forEach(warning => {
-      fhirFSH.appendLine('Warning: ' + warning.message);
-    });
+      result.warnings.forEach(warning => {
+        fhirFSH.appendLine('Warning: ' + warning.message);
+      });
 
-    fhirFSH.appendLine('Finished!');
-    workspace.openTextDocument({ content: result.fsh as string, language: 'fsh' });
-  });
+      fhirFSH.appendLine('Finished!');
+      workspace.openTextDocument({ content: result.fsh as string, language: 'fsh' });
+    }
+  );
 
   fhirFSH.show();
 }
