@@ -92,7 +92,14 @@ To run the SUSHI Build task, use VS Code's Run Task feature. The "Run Task" feat
 
 Note that you must have SUSHI installed locally in order for the task to run successfully. See [SUSHI Installation instructions](https://fshschool.org/docs/sushi/installation/) for help installing.
 
-## Compile and Run (for Developers)
+## Instructions for Developers
+
+### Intro to FSH VS Code Extension Development
+
+To learn more about the FSH VS Code Extension, watch the Knowledge Sharing Sessions for [Developing FSH Tools](https://vimeo.com/990594107/c35c3f5e43) (view the slides [here](https://confluence.hl7.org/display/FHIR/FSH+Knowledge+Sharing+Sessions?preview=/256509612/256514908/KSS%203%20-%20Developing%20FSH%20Tools.pdf)) and [Developing FSH VS Code Extension](https://vimeo.com/1008502402/e0d365dc49) (view the slides [here](https://confluence.hl7.org/display/FHIR/FSH+Knowledge+Sharing+Sessions?preview=/256509612/265095834/KSS%207%20-%20Developing%20FSH%20VS%20Code%20Extension.pdf)).
+These sessions provide a technical overview of the codebase and summarize key concepts for developers.
+
+### Compile and Run
 
 - run `npm install` in this folder. This installs all necessary npm modules in both the
   client and server folder
@@ -100,7 +107,7 @@ Note that you must have SUSHI installed locally in order for the task to run suc
 - Switch to the Debug viewlet.
 - Select `Extension` from the drop down.
 
-## NPM Tasks
+### NPM Tasks
 
 The following NPM tasks may be useful in development:
 
@@ -121,11 +128,11 @@ To run any of these tasks, use `npm run`. For example:
 $ npm run build:watch
 ```
 
-### Note about testing
+#### Note about testing
 
 The `test` task will often (but not always) produce an error if it is run while VSCode is open. If you receive this error, close VSCode and run the task from the command line.
 
-## Updating the Grammar
+### Updating the Grammar
 
 The `src/lang/` directory contains the FSH lexer and parser. When the FSH grammar changes, the files in this directory will need to be updated. These files are generated in the [SUSHI](https://github.com/FHIR/sushi) project by running ANTLR on the grammar definition files. The files are then copied from the SUSHI project to this project.
 The files to copy are:
