@@ -187,7 +187,7 @@ export async function conversionFHIRtoFSH(...file: any[]) : Promise<void>
   const myArray: any[] = [];
   myArray.push(fhirObjects.content);
 
-  fhirToFsh(myArray, { style: `string`, indent: true, dependencies: dependenciesParameter }).then(result => {
+  fhirToFsh(myArray, { style: 'string', indent: true, dependencies: dependenciesParameter }).then(result => {
     result.errors.forEach(error => {
       fhirFSH.appendLine('Error: ' + error.message);
     });
