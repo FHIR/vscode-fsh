@@ -10,7 +10,9 @@ import {
   workspace,
   Position,
   env,
-  Uri
+  Uri,
+  Range,
+  ViewColumn
 } from 'vscode';
 
 import axios from 'axios';
@@ -166,7 +168,23 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
         });
 
         fhirFSH.appendLine('Finished!');
-        workspace.openTextDocument({ content: JSON.stringify(result.fhir[0]), language: 'json' });
+
+        workspace
+          .openTextDocument({ content: JSON.stringify(result.fhir[0]), language: 'json' })
+          .then(doc => {
+            window
+              .showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active })
+              .then(editor => {
+                editor.edit(editBuilder => {
+                  const fullRange = new Range(
+                    doc.positionAt(0),
+                    doc.positionAt(doc.getText().length)
+                  );
+                  const formattedText = JSON.stringify(JSON.parse(doc.getText()), null, 2);
+                  editBuilder.replace(fullRange, formattedText);
+                });
+              });
+          });
       }
     );
   });
@@ -197,7 +215,9 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
       });
 
       fhirFSH.appendLine('Finished!');
-      workspace.openTextDocument({ content: result.fsh as string, language: 'fsh' });
+      workspace.openTextDocument({ content: result.fsh as string, language: 'fsh' }).then(doc => {
+        window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
+      });
     }
   );
 
