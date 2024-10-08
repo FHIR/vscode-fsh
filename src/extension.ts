@@ -11,7 +11,6 @@ import {
   Position,
   env,
   Uri,
-  Range,
   ViewColumn
 } from 'vscode';
 
@@ -22,9 +21,16 @@ import { fshToFhir } from 'fsh-sushi/dist/run';
 import { fhirToFsh } from 'gofsh/dist/api';
 import { FshDefinitionProvider } from './FshDefinitionProvider';
 import { FshCompletionProvider } from './FshCompletionProvider';
+import {
+  FshConversionProvider,
+  createFSHURIfromFileUri,
+  createJSONURIfromFileUri
+} from './FshConversionProvider';
 import { SushiBuildTaskProvider } from './SushiBuildTaskProvider';
+import { create } from 'domain';
 
 let fhirFSH: OutputChannel;
+let fshConversionProvider: FshConversionProvider;
 
 const FSH_MODE: DocumentFilter = { language: 'fsh', scheme: 'file' };
 // For FSH entity names and keywords, show the user FSH documentation.
@@ -109,9 +115,15 @@ export function activate(context: ExtensionContext): {
 } {
   const definitionProviderInstance = new FshDefinitionProvider();
   const completionProviderInstance = new FshCompletionProvider(definitionProviderInstance);
+  fshConversionProvider = new FshConversionProvider();
+
   context.subscriptions.push(
     languages.registerDefinitionProvider(FSH_MODE, definitionProviderInstance),
-    languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance, '.')
+    languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance, '.'),
+    workspace.registerTextDocumentContentProvider(
+      FshConversionProvider.fshConversionProviderScheme,
+      fshConversionProvider
+    )
   );
 
   fhirFSH = window.createOutputChannel('FHIR <=> FSH');
@@ -137,6 +149,7 @@ export function deactivate() {
 
 export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
   fhirFSH.clear();
+  const fileUri: Uri = file[0];
 
   const fhirVersion = workspace.getConfiguration('vscode-fsh').get('FHIRVersion') as string;
   const dependencies = workspace.getConfiguration('vscode-fsh').get('Dependencies') as string[];
@@ -169,22 +182,13 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
 
         fhirFSH.appendLine('Finished!');
 
-        workspace
-          .openTextDocument({ content: JSON.stringify(result.fhir[0]), language: 'json' })
-          .then(doc => {
-            window
-              .showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active })
-              .then(editor => {
-                editor.edit(editBuilder => {
-                  const fullRange = new Range(
-                    doc.positionAt(0),
-                    doc.positionAt(doc.getText().length)
-                  );
-                  const formattedText = JSON.stringify(JSON.parse(doc.getText()), null, 2);
-                  editBuilder.replace(fullRange, formattedText);
-                });
-              });
-          });
+        const uri = createJSONURIfromFileUri(fileUri);
+        const formattedText = JSON.stringify(JSON.parse(JSON.stringify(result.fhir[0])), null, 2);
+        fshConversionProvider.updated(formattedText, uri);
+
+        workspace.openTextDocument(uri).then(doc => {
+          window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
+        });
       }
     );
   });
@@ -215,7 +219,11 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
       });
 
       fhirFSH.appendLine('Finished!');
-      workspace.openTextDocument({ content: result.fsh as string, language: 'fsh' }).then(doc => {
+
+      const uri = createFSHURIfromFileUri(fileUri);
+      fshConversionProvider.updated(result.fsh as string, uri);
+
+      workspace.openTextDocument(uri).then(doc => {
         window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
       });
     }
