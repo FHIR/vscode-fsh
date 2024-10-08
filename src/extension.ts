@@ -27,7 +27,6 @@ import {
   createJSONURIfromFileUri
 } from './FshConversionProvider';
 import { SushiBuildTaskProvider } from './SushiBuildTaskProvider';
-import { create } from 'domain';
 
 let fhirFSH: OutputChannel;
 let fshConversionProvider: FshConversionProvider;
