@@ -4,7 +4,7 @@ import { TextDocument, Position } from 'vscode';
 
 export function collectFshFilesForPath(
   filepath: string,
-  fshFiles: string[] = [],
+  fshFiles: string[],
   visitedPaths: Set<string> = new Set()
 ) {
   const realPath = fs.realpathSync(filepath);
