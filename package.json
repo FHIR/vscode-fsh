@@ -86,30 +86,6 @@
         }
       ]
     },
-    "configuration":[
-      {
-        "title": "HL7 FHIR Shorthand",
-        "properties": {
-          "vscode-fsh.FHIRVersion": {
-            "type": "string",
-            "order": 0,
-            "default": "4.0.1",
-            "enum": ["4.0.1", "4.3.0", "5.0.0"],
-            "description": "The FHIR version used in converting FSH to FHIR."
-          },
-          "vscode-fsh.Dependencies": {
-            "type": "array",
-            "order": 1,
-            "items": {
-              "type":"string",
-              "pattern": "^\\S*@\\S*$",
-              "patternErrorMessage": "Format: <packagename>@<SemVer>, note: no leading and or trailing whitespaces!"
-            },            
-            "description": "The dependencies on the FHIR packages used in converting to and from FHIR shorthand. Format: <packagename>@<SemVer>"
-          }
-        }
-      }
-    ],
     "problemMatchers": [
       {
         "owner": "vscode-fsh",
@@ -190,7 +166,7 @@
     "axios": "^1.7.7",
     "semver": "^7.6.3",
     "yaml": "^2.5.0",
-    "fsh-sushi": "3.11.1",
+    "fsh-sushi": "3.12.0",
     "gofsh": "2.3.1"
   }
 }

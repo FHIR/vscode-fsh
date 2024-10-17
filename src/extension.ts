@@ -24,7 +24,8 @@ import { FshCompletionProvider } from './FshCompletionProvider';
 import {
   FshConversionProvider,
   createFSHURIfromFileUri,
-  createJSONURIfromFileUri
+  createJSONURIfromFileUri,
+  findVersionAnddependencies
 } from './FshConversionProvider';
 import { SushiBuildTaskProvider } from './SushiBuildTaskProvider';
 
@@ -150,12 +151,11 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
   fhirFSH.clear();
   const fileUri: Uri = file[0];
 
-  const fhirVersion = workspace.getConfiguration('vscode-fsh').get('FHIRVersion') as string;
-  const dependencies = workspace.getConfiguration('vscode-fsh').get('Dependencies') as string[];
+  const sushiConfigInfo = await findVersionAnddependencies(fileUri, fhirFSH);
 
   const fshtoFHIRDependencies: ImplementationGuideDependsOn[] = [];
 
-  dependencies.forEach(dependency => {
+  sushiConfigInfo.dependencies.forEach(dependency => {
     const newDependency: ImplementationGuideDependsOn = {
       packageId: dependency.split('@')[0],
       version: dependency.split('@')[1]
@@ -168,9 +168,12 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
 
   workspace.fs.readFile(file[0]).then(bytes => {
     const fileText = new TextDecoder().decode(bytes);
-
-    fshToFhir(fileText, { fhirVersion: fhirVersion, dependencies: dependenciesParameter }).then(
-      result => {
+    fhirFSH.appendLine('Converting FSH to FHIR...');
+    fshToFhir(fileText, {
+      fhirVersion: sushiConfigInfo.version,
+      dependencies: dependenciesParameter
+    })
+      .then(result => {
         result.errors.forEach(error => {
           fhirFSH.appendLine('Error: ' + error.message);
         });
@@ -181,15 +184,20 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
 
         fhirFSH.appendLine('Finished!');
 
-        const uri = createJSONURIfromFileUri(fileUri);
-        const formattedText = JSON.stringify(JSON.parse(JSON.stringify(result.fhir[0])), null, 2);
-        fshConversionProvider.updated(formattedText, uri);
+        // There can be multiple FHIR objects in the result
+        result.fhir.forEach(fhirObject => {
+          const formattedText = JSON.stringify(JSON.parse(JSON.stringify(fhirObject)), null, 2);
+          const uri = createJSONURIfromFileUri(fileUri, result.fhir.indexOf(fhirObject) + '_');
+          fshConversionProvider.updated(formattedText, uri);
 
-        workspace.openTextDocument(uri).then(doc => {
-          window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
+          workspace.openTextDocument(uri).then(doc => {
+            window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
+          });
         });
-      }
-    );
+      })
+      .catch(error => {
+        fhirFSH.appendLine('Error: ' + error.message);
+      });
   });
 
   fhirFSH.show();
@@ -198,17 +206,22 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
 export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
   fhirFSH.clear();
 
-  const dependencies = workspace.getConfiguration('vscode-fsh').get('Dependencies') as string[];
-  const dependenciesParameter = dependencies.length === 0 ? undefined : dependencies;
-
   const fileUri: Uri = file[0];
   const fhirObjects = readJSONorXML(fileUri.path);
+
+  const sushiConfigInfo = await findVersionAnddependencies(fileUri, fhirFSH);
 
   const myArray: any[] = [];
   myArray.push(fhirObjects.content);
 
-  fhirToFsh(myArray, { style: 'string', indent: true, dependencies: dependenciesParameter }).then(
-    result => {
+  fhirFSH.appendLine('Converting FHIR to FSH...');
+
+  fhirToFsh(myArray, {
+    style: 'string',
+    indent: true,
+    dependencies: sushiConfigInfo.dependencies
+  })
+    .then(result => {
       result.errors.forEach(error => {
         fhirFSH.appendLine('Error: ' + error.message);
       });
@@ -219,14 +232,16 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
 
       fhirFSH.appendLine('Finished!');
 
-      const uri = createFSHURIfromFileUri(fileUri);
+      const uri = createFSHURIfromFileUri(fileUri, '');
       fshConversionProvider.updated(result.fsh as string, uri);
 
       workspace.openTextDocument(uri).then(doc => {
         window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
       });
-    }
-  );
+    })
+    .catch(error => {
+      fhirFSH.appendLine('Error: ' + error.message);
+    });
 
   fhirFSH.show();
 }

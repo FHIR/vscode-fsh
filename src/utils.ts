@@ -2,6 +2,19 @@ import fs from 'fs';
 import path from 'path';
 import { TextDocument, Position } from 'vscode';
 
+export type DependencyDetails = {
+  id: string;
+  uri: string;
+  version: string | number;
+};
+
+export type SushiConfiguration = {
+  fhirVersion?: string | string[];
+  dependencies?: {
+    [key: string]: string | number | DependencyDetails;
+  };
+};
+
 export function collectFshFilesForPath(filepath: string, fshFiles: string[]): void {
   const stats = fs.statSync(filepath);
   if (stats.isDirectory()) {
