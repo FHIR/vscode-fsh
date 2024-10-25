@@ -26,23 +26,23 @@ export class FshConversionProvider implements TextDocumentContentProvider {
 }
 
 export function createFSHURIfromFileUri(fileUri: Uri, prefix: string): Uri {
-  return createURIfromFileUri(fileUri, '.fsh', prefix);
-}
-
-export function createJSONURIfromFileUri(fileUri: Uri, prefix: string): Uri {
-  return createURIfromFileUri(fileUri, '.json', prefix);
-}
-
-function createURIfromFileUri(fileUri: Uri, extension: string, prefix: string): Uri {
-  //Get the file name without the extension
   let fileName = basename(fileUri.path);
   fileName = fileName.split('.').slice(0, -1).join('.');
 
+  return createURIfromFileUri(fileName, '.fsh', prefix);
+}
+
+export function createJSONURIfromFileUri(identifier: string, prefix: string): Uri {
+  return createURIfromFileUri(identifier, '.json', prefix);
+}
+
+function createURIfromFileUri(identifier: string, extension: string, prefix: string): Uri {
+  //Get the file name without the extension
   return Uri.parse(
     FshConversionProvider.fshConversionProviderScheme +
       ': (PREVIEW) ' +
       prefix +
-      fileName +
+      identifier +
       extension
   );
 }
@@ -50,7 +50,7 @@ function createURIfromFileUri(fileUri: Uri, extension: string, prefix: string): 
 export async function findVersionAnddependencies(
   fileUri: Uri,
   output: OutputChannel
-): Promise<{ version: string; dependencies: string[] }> {
+): Promise<{ version: string; dependencies: string[]; sushiconfig: Uri }> {
   let fhirVersion = '4.0.1';
   const conversionDependencies: string[] = [];
 
@@ -76,7 +76,11 @@ export async function findVersionAnddependencies(
     output.appendLine('No sushi-config.yaml file found.');
   }
 
-  return { version: fhirVersion, dependencies: conversionDependencies };
+  return {
+    version: fhirVersion,
+    dependencies: conversionDependencies,
+    sushiconfig: sushiConfigUri
+  };
 }
 
 async function findMatchingSushiConfig(fileUri: Uri): Promise<Uri> {
@@ -136,4 +140,43 @@ function getDependenciesFromSushiConfig(
     );
   }
   return parsedDependencies;
+}
+
+export async function findMatchingFSHResourcesForProject(fileUri: Uri): Promise<string[]> {
+  const fshResources: string[] = [];
+  const configdir = dirname(fileUri.fsPath);
+  const files: Uri[] = await workspace.findFiles('**/*.{fsh}');
+
+  for (const file of files) {
+    if (file.fsPath.startsWith(configdir)) {
+      //Found FSH resource belonging to project.
+      const contents = await workspace.fs.readFile(file);
+      const decoder = new TextDecoder();
+      const decodedContents = decoder.decode(contents);
+      fshResources.push(decodedContents);
+    }
+  }
+
+  return fshResources;
+}
+
+export function findNamesInFSHResource(fshContent: string): string[] {
+  const ids: string[] = [];
+  const lines = fshContent.split('\n');
+  for (const line of lines) {
+    if (line.startsWith('CodeSystem:')) {
+      ids.push(line.split(' ')[1].trim());
+    } else if (line.startsWith('Instance:')) {
+      ids.push(line.split(' ')[1].trim());
+    } else if (line.startsWith('ValueSet:')) {
+      ids.push(line.split(' ')[1].trim());
+    } else if (line.startsWith('ConceptMap:')) {
+      ids.push(line.split(' ')[1].trim());
+    } else if (line.startsWith('Profile:')) {
+      ids.push(line.split(' ')[1].trim());
+    } else if (line.startsWith('Extension:')) {
+      ids.push(line.split(' ')[1].trim());
+    }
+  }
+  return ids;
 }

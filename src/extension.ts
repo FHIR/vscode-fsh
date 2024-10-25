@@ -25,7 +25,9 @@ import {
   FshConversionProvider,
   createFSHURIfromFileUri,
   createJSONURIfromFileUri,
-  findVersionAnddependencies
+  findVersionAnddependencies,
+  findMatchingFSHResourcesForProject,
+  findNamesInFSHResource
 } from './FshConversionProvider';
 import { SushiBuildTaskProvider } from './SushiBuildTaskProvider';
 
@@ -151,7 +153,25 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
   fhirFSH.clear();
   const fileUri: Uri = file[0];
 
+  const fshContent = await workspace.fs.readFile(fileUri);
+  const decoder = new TextDecoder();
+  const fshString = decoder.decode(fshContent);
+  const fshNames = findNamesInFSHResource(fshString);
+
+  fshNames.forEach(name => {
+    fhirFSH.appendLine('Found FSH resource in source: ' + name);
+  });
+
   const sushiConfigInfo = await findVersionAnddependencies(fileUri, fhirFSH);
+
+  let fshResourcesToConvert: string[];
+
+  // If there is a sushi-config there is a project wirh multiple FSH files (including the one we are converting)
+  if (sushiConfigInfo.sushiconfig == null) {
+    fshResourcesToConvert = [fshString];
+  } else {
+    fshResourcesToConvert = await findMatchingFSHResourcesForProject(sushiConfigInfo.sushiconfig);
+  }
 
   const fshtoFHIRDependencies: ImplementationGuideDependsOn[] = [];
 
@@ -166,39 +186,38 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
   const dependenciesParameter =
     fshtoFHIRDependencies.length === 0 ? undefined : fshtoFHIRDependencies;
 
-  workspace.fs.readFile(file[0]).then(bytes => {
-    const fileText = new TextDecoder().decode(bytes);
-    fhirFSH.appendLine('Converting FSH to FHIR...');
-    fshToFhir(fileText, {
-      fhirVersion: sushiConfigInfo.version,
-      dependencies: dependenciesParameter
-    })
-      .then(result => {
-        result.errors.forEach(error => {
-          fhirFSH.appendLine('Error: ' + error.message);
-        });
+  fhirFSH.appendLine('Converting FSH to FHIR...');
+  fshToFhir(fshResourcesToConvert, {
+    fhirVersion: sushiConfigInfo.version,
+    dependencies: dependenciesParameter
+  })
+    .then(result => {
+      result.errors.forEach(error => {
+        fhirFSH.appendLine('Error: ' + error.message);
+      });
 
-        result.warnings.forEach(warning => {
-          fhirFSH.appendLine('Warning: ' + warning.message);
-        });
-        // There can be multiple FHIR objects in the result
-        result.fhir.forEach(fhirObject => {
+      result.warnings.forEach(warning => {
+        fhirFSH.appendLine('Warning: ' + warning.message);
+      });
+
+      result.fhir.forEach(fhirObject => {
+        if (fshNames.includes(fhirObject.id)) {
           const formattedText = JSON.stringify(JSON.parse(JSON.stringify(fhirObject)), null, 2);
-          const uri = createJSONURIfromFileUri(fileUri, result.fhir.indexOf(fhirObject) + '_');
+          const uri = createJSONURIfromFileUri(fhirObject.id, '');
           fshConversionProvider.updated(formattedText, uri);
 
           workspace.openTextDocument(uri).then(doc => {
             window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
           });
-        });
-      })
-      .catch(error => {
-        fhirFSH.appendLine('Error: ' + error.message);
-      })
-      .finally(() => {
-        fhirFSH.appendLine('Finished!');
+        }
       });
-  });
+    })
+    .catch(error => {
+      fhirFSH.appendLine('Error: ' + error.message);
+    })
+    .finally(() => {
+      fhirFSH.appendLine('Finished!');
+    });
 
   fhirFSH.show();
 }
