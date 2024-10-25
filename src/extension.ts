@@ -181,9 +181,6 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
         result.warnings.forEach(warning => {
           fhirFSH.appendLine('Warning: ' + warning.message);
         });
-
-        fhirFSH.appendLine('Finished!');
-
         // There can be multiple FHIR objects in the result
         result.fhir.forEach(fhirObject => {
           const formattedText = JSON.stringify(JSON.parse(JSON.stringify(fhirObject)), null, 2);
@@ -197,6 +194,9 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
       })
       .catch(error => {
         fhirFSH.appendLine('Error: ' + error.message);
+      })
+      .finally(() => {
+        fhirFSH.appendLine('Finished!');
       });
   });
 
@@ -230,8 +230,6 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
         fhirFSH.appendLine('Warning: ' + warning.message);
       });
 
-      fhirFSH.appendLine('Finished!');
-
       const uri = createFSHURIfromFileUri(fileUri, '');
       fshConversionProvider.updated(result.fsh as string, uri);
 
@@ -241,6 +239,9 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
     })
     .catch(error => {
       fhirFSH.appendLine('Error: ' + error.message);
+    })
+    .finally(() => {
+      fhirFSH.appendLine('Finished!');
     });
 
   fhirFSH.show();
