@@ -15,10 +15,8 @@ import {
 } from 'vscode';
 
 import axios from 'axios';
-import { ImplementationGuideDependsOn } from 'fsh-sushi/dist/fhirtypes';
-import { readJSONorXML } from 'gofsh/dist/utils';
-import { fshToFhir } from 'fsh-sushi/dist/run';
-import { fhirToFsh, fshMap } from 'gofsh/dist/api';
+import { fhirtypes, sushiClient } from 'fsh-sushi';
+import { utils as gofshUtils, gofshClient } from 'gofsh/dist';
 import { FshDefinitionProvider } from './FshDefinitionProvider';
 import { FshCompletionProvider } from './FshCompletionProvider';
 import {
@@ -175,10 +173,10 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
     fshResourcesToConvert = await findMatchingFSHResourcesForProject(sushiConfigInfo.sushiconfig);
   }
 
-  const fshtoFHIRDependencies: ImplementationGuideDependsOn[] = [];
+  const fshtoFHIRDependencies: fhirtypes.ImplementationGuideDependsOn[] = [];
 
   sushiConfigInfo.dependencies.forEach(dependency => {
-    const newDependency: ImplementationGuideDependsOn = {
+    const newDependency: fhirtypes.ImplementationGuideDependsOn = {
       packageId: dependency.split('@')[0],
       version: dependency.split('@')[1]
     };
@@ -189,7 +187,7 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
     fshtoFHIRDependencies.length === 0 ? undefined : fshtoFHIRDependencies;
 
   fhirFSH.appendLine('Converting FSH to FHIR...');
-  fshToFhir(fshResourcesToConvert, {
+  sushiClient.fshToFhir(fshResourcesToConvert, {
     canonical: sushiConfigInfo.canonical,
     fhirVersion: sushiConfigInfo.version,
     dependencies: dependenciesParameter
@@ -229,7 +227,7 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
   fhirFSH.clear();
 
   const fileUri: Uri = file[0];
-  const fhirObjects = readJSONorXML(fileUri.path);
+  const fhirObjects = gofshUtils.readJSONorXML(fileUri.path);
 
   const sushiConfigInfo = await findConfiguration(fileUri, fhirFSH);
 
@@ -251,8 +249,8 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
   // myArray.push(fhirObjects.content);
 
   fhirFSH.appendLine('Converting FHIR to FSH...');
-
-  fhirToFsh(jsonResourcesToConvert, {
+  
+  gofshClient.fhirToFsh(jsonResourcesToConvert, {
     style: 'map',
     indent: true,
     dependencies: sushiConfigInfo.dependencies
@@ -266,7 +264,7 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
         fhirFSH.appendLine('Warning: ' + warning.message);
       });
 
-      const fshResult: string = findFSHResourceInResult(result.fsh as fshMap, tobeConvertedJsonResource);
+      const fshResult: string = findFSHResourceInResult(result.fsh as gofshClient.fshMap, tobeConvertedJsonResource);
 
       const uri = createFSHURIfromFileUri(tobeConvertedJsonResource);
       fshConversionProvider.updated(fshResult as string, uri);

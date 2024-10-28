@@ -2,7 +2,7 @@ import { Uri, TextDocumentContentProvider, EventEmitter, workspace, OutputChanne
 import path, { basename, dirname } from 'path';
 import YAML from 'yaml';
 import { SushiConfiguration } from './utils';
-import { fshMap, ResourceMap } from 'gofsh/dist/api'; //Check review comment in extenison.ts
+import { gofshClient } from 'gofsh/dist';
 
 export class FshConversionProvider implements TextDocumentContentProvider {
   static readonly fshConversionProviderScheme = 'fshfhirconversion';
@@ -206,7 +206,7 @@ export function findNamesInFSHResource(fshContent: string): string[] {
   return ids;
 }
 
-export function findFSHResourceInResult(fshResult: fshMap, resourceId: string): string {
+export function findFSHResourceInResult(fshResult: gofshClient.fshMap, resourceId: string): string {
 
   let resourceContent = fshResult.aliases + '\n\n';
 
@@ -216,7 +216,7 @@ export function findFSHResourceInResult(fshResult: fshMap, resourceId: string): 
 
   for (const [key, resourceMap] of Object.entries(fshResult)) {
     if (resultKeys.includes(key)) {
-      (resourceMap as ResourceMap).forEach((value, id) => {
+      (resourceMap as gofshClient.ResourceMap).forEach((value, id) => {
         if (id === resourceId) {
           resourceContent += value;
         }
