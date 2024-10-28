@@ -1,5 +1,5 @@
 import { Uri, TextDocumentContentProvider, EventEmitter, workspace, OutputChannel } from 'vscode';
-import { basename, dirname } from 'path';
+import path, { basename, dirname } from 'path';
 import YAML from 'yaml';
 import { SushiConfiguration } from './utils';
 
@@ -88,7 +88,7 @@ async function findMatchingSushiConfig(fileUri: Uri): Promise<Uri> {
     workspace.findFiles('**/sushi-config.{yaml,yml}').then(files => {
       let sushiConfigUri = null;
       files.forEach(file => {
-        const configdir = dirname(file.fsPath);
+        const configdir = dirname(file.fsPath) + path.sep;
         if (fileUri.fsPath.startsWith(configdir)) {
           sushiConfigUri = file;
         }
@@ -142,9 +142,9 @@ function getDependenciesFromSushiConfig(
   return parsedDependencies;
 }
 
-export async function findMatchingFSHResourcesForProject(fileUri: Uri): Promise<string[]> {
+export async function findMatchingFSHResourcesForProject(configFileUri: Uri): Promise<string[]> {
   const fshResources: string[] = [];
-  const configdir = dirname(fileUri.fsPath);
+  const configdir = dirname(configFileUri.fsPath) + path.sep;
   const files: Uri[] = await workspace.findFiles('**/*.{fsh}');
 
   for (const file of files) {
