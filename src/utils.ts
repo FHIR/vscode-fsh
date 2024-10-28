@@ -9,6 +9,7 @@ export type DependencyDetails = {
 };
 
 export type SushiConfiguration = {
+  canonical?: string;
   fhirVersion?: string | string[];
   dependencies?: {
     [key: string]: string | number | DependencyDetails;

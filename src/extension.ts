@@ -25,7 +25,7 @@ import {
   FshConversionProvider,
   createFSHURIfromFileUri,
   createJSONURIfromFileUri,
-  findVersionAnddependencies,
+  findConfiguration,
   findMatchingFSHResourcesForProject,
   findNamesInFSHResource
 } from './FshConversionProvider';
@@ -162,7 +162,7 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
     fhirFSH.appendLine('Found FSH resource in source: ' + name);
   });
 
-  const sushiConfigInfo = await findVersionAnddependencies(fileUri, fhirFSH);
+  const sushiConfigInfo = await findConfiguration(fileUri, fhirFSH);
 
   let fshResourcesToConvert: string[];
 
@@ -188,6 +188,7 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
 
   fhirFSH.appendLine('Converting FSH to FHIR...');
   fshToFhir(fshResourcesToConvert, {
+    canonical: sushiConfigInfo.canonical,
     fhirVersion: sushiConfigInfo.version,
     dependencies: dependenciesParameter
   })
@@ -228,7 +229,7 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
   const fileUri: Uri = file[0];
   const fhirObjects = readJSONorXML(fileUri.path);
 
-  const sushiConfigInfo = await findVersionAnddependencies(fileUri, fhirFSH);
+  const sushiConfigInfo = await findConfiguration(fileUri, fhirFSH);
 
   const myArray: any[] = [];
   myArray.push(fhirObjects.content);

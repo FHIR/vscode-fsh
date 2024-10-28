@@ -47,11 +47,12 @@ function createURIfromFileUri(identifier: string, extension: string, prefix: str
   );
 }
 
-export async function findVersionAnddependencies(
+export async function findConfiguration(
   fileUri: Uri,
   output: OutputChannel
-): Promise<{ version: string; dependencies: string[]; sushiconfig: Uri }> {
+): Promise<{ canonical: string; version: string; dependencies: string[]; sushiconfig: Uri }> {
   let fhirVersion = '4.0.1';
+  let canonical = 'http://example.org';
   const conversionDependencies: string[] = [];
 
   const sushiConfigUri = await findMatchingSushiConfig(fileUri);
@@ -67,6 +68,9 @@ export async function findVersionAnddependencies(
     fhirVersion = getVersionFromSushiConfig(parsedConfig);
     output.appendLine('Found version: ' + fhirVersion);
 
+    canonical = getCanonicalFromSushiConfig(parsedConfig);
+    output.appendLine('Found canonical: ' + canonical);
+
     const dependencies = getDependenciesFromSushiConfig(parsedConfig);
     dependencies.forEach(dep => {
       output.appendLine('Found dependency: ' + dep.packageId + '@' + dep.version);
@@ -77,6 +81,7 @@ export async function findVersionAnddependencies(
   }
 
   return {
+    canonical: canonical,
     version: fhirVersion,
     dependencies: conversionDependencies,
     sushiconfig: sushiConfigUri
@@ -96,6 +101,11 @@ async function findMatchingSushiConfig(fileUri: Uri): Promise<Uri> {
       resolve(sushiConfigUri);
     });
   });
+}
+
+function getCanonicalFromSushiConfig(config: SushiConfiguration): string {
+  // try to get canonical: if there's more than one, use the first one that is recognized
+  return config.canonical !== undefined ? config.canonical : 'http://example.org';
 }
 
 function getVersionFromSushiConfig(config: SushiConfiguration): string {
