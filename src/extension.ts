@@ -18,7 +18,7 @@ import axios from 'axios';
 import { ImplementationGuideDependsOn } from 'fsh-sushi/dist/fhirtypes';
 import { readJSONorXML } from 'gofsh/dist/utils';
 import { fshToFhir } from 'fsh-sushi/dist/run';
-import { fhirToFsh } from 'gofsh/dist/api';
+import { fhirToFsh, fshMap } from 'gofsh/dist/api';
 import { FshDefinitionProvider } from './FshDefinitionProvider';
 import { FshCompletionProvider } from './FshCompletionProvider';
 import {
@@ -27,7 +27,9 @@ import {
   createJSONURIfromFileUri,
   findConfiguration,
   findMatchingFSHResourcesForProject,
-  findNamesInFSHResource
+  findNamesInFSHResource,
+  findMatchingJsonResourcesForProject,
+  findFSHResourceInResult
 } from './FshConversionProvider';
 import { SushiBuildTaskProvider } from './SushiBuildTaskProvider';
 
@@ -204,7 +206,7 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
       result.fhir.forEach(fhirObject => {
         if (fshNames.includes(fhirObject.id)) {
           const formattedText = JSON.stringify(JSON.parse(JSON.stringify(fhirObject)), null, 2);
-          const uri = createJSONURIfromFileUri(fhirObject.id, '');
+          const uri = createJSONURIfromFileUri(fhirObject.id);
           fshConversionProvider.updated(formattedText, uri);
 
           workspace.openTextDocument(uri).then(doc => {
@@ -231,13 +233,27 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
 
   const sushiConfigInfo = await findConfiguration(fileUri, fhirFSH);
 
-  const myArray: any[] = [];
-  myArray.push(fhirObjects.content);
+  const tobeConvertedJsonResource: string = fhirObjects.content.id;
+  fhirFSH.appendLine('Found Json FHIR resource in source: ' + tobeConvertedJsonResource);
+  
+  // If there is a sushi-config there is a project with multiple Json files (including the one we are converting)
+  let jsonResourcesToConvert: any[] = [];
+  if (sushiConfigInfo.sushiconfig == null) {
+    jsonResourcesToConvert.push(fhirObjects.content);
+  } else {
+    const jsonResources: string[] = await findMatchingJsonResourcesForProject(sushiConfigInfo.sushiconfig);
+    jsonResources.forEach(jsonResource => {
+      jsonResourcesToConvert.push(jsonResource);
+    });
+  }
+
+  // const myArray: any[] = [];
+  // myArray.push(fhirObjects.content);
 
   fhirFSH.appendLine('Converting FHIR to FSH...');
 
-  fhirToFsh(myArray, {
-    style: 'string',
+  fhirToFsh(jsonResourcesToConvert, {
+    style: 'map',
     indent: true,
     dependencies: sushiConfigInfo.dependencies
   })
@@ -250,8 +266,10 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
         fhirFSH.appendLine('Warning: ' + warning.message);
       });
 
-      const uri = createFSHURIfromFileUri(fileUri, '');
-      fshConversionProvider.updated(result.fsh as string, uri);
+      const fshResult: string = findFSHResourceInResult(result.fsh as fshMap, tobeConvertedJsonResource);
+
+      const uri = createFSHURIfromFileUri(tobeConvertedJsonResource);
+      fshConversionProvider.updated(fshResult as string, uri);
 
       workspace.openTextDocument(uri).then(doc => {
         window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });

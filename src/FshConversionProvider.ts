@@ -2,6 +2,7 @@ import { Uri, TextDocumentContentProvider, EventEmitter, workspace, OutputChanne
 import path, { basename, dirname } from 'path';
 import YAML from 'yaml';
 import { SushiConfiguration } from './utils';
+import { fshMap, ResourceMap } from 'gofsh/dist/api'; //Check review comment in extenison.ts
 
 export class FshConversionProvider implements TextDocumentContentProvider {
   static readonly fshConversionProviderScheme = 'fshfhirconversion';
@@ -25,23 +26,19 @@ export class FshConversionProvider implements TextDocumentContentProvider {
   }
 }
 
-export function createFSHURIfromFileUri(fileUri: Uri, prefix: string): Uri {
-  let fileName = basename(fileUri.path);
-  fileName = fileName.split('.').slice(0, -1).join('.');
-
-  return createURIfromFileUri(fileName, '.fsh', prefix);
+export function createFSHURIfromFileUri(identifier: string): Uri {
+  return createURIfromFileUri(identifier, '.fsh');
 }
 
-export function createJSONURIfromFileUri(identifier: string, prefix: string): Uri {
-  return createURIfromFileUri(identifier, '.json', prefix);
+export function createJSONURIfromFileUri(identifier: string): Uri {
+  return createURIfromFileUri(identifier, '.json');
 }
 
-function createURIfromFileUri(identifier: string, extension: string, prefix: string): Uri {
+function createURIfromFileUri(identifier: string, extension: string): Uri {
   //Get the file name without the extension
   return Uri.parse(
     FshConversionProvider.fshConversionProviderScheme +
       ': (PREVIEW) ' +
-      prefix +
       identifier +
       extension
   );
@@ -170,6 +167,24 @@ export async function findMatchingFSHResourcesForProject(configFileUri: Uri): Pr
   return fshResources;
 }
 
+export async function findMatchingJsonResourcesForProject(configFileUri: Uri): Promise<string[]> {
+  const jsonResources: string[] = [];
+  const configdir = dirname(configFileUri.fsPath) + path.sep;
+  const files: Uri[] = await workspace.findFiles('**/*.{json}');
+
+  for (const file of files) {
+    if (file.fsPath.startsWith(configdir)) {
+      //Found FSH resource belonging to project.
+      const contents = await workspace.fs.readFile(file);
+      const decoder = new TextDecoder();
+      const decodedContents = decoder.decode(contents);
+      jsonResources.push(decodedContents);
+    }
+  }
+
+  return jsonResources;
+}
+
 export function findNamesInFSHResource(fshContent: string): string[] {
   const ids: string[] = [];
   const lines = fshContent.split('\n');
@@ -190,3 +205,24 @@ export function findNamesInFSHResource(fshContent: string): string[] {
   }
   return ids;
 }
+
+export function findFSHResourceInResult(fshResult: fshMap, resourceId: string): string {
+
+  let resourceContent = fshResult.aliases + '\n\n';
+
+  const resultKeys: string[] = [
+    'mappings', 'profiles', 'extensions', 'logicals', 'resources', 'codeSystems', 'valueSets', 'instances'
+  ];
+
+  for (const [key, resourceMap] of Object.entries(fshResult)) {
+    if (resultKeys.includes(key)) {
+      (resourceMap as ResourceMap).forEach((value, id) => {
+        if (id === resourceId) {
+          resourceContent += value;
+        }
+      });
+    }
+  }
+
+  return resourceContent;
+};
