@@ -1,5 +1,5 @@
 import { Uri, TextDocumentContentProvider, EventEmitter, workspace, OutputChannel } from 'vscode';
-import path, { basename, dirname } from 'path';
+import path, { dirname } from 'path';
 import YAML from 'yaml';
 import { SushiConfiguration } from './utils';
 import { gofshClient } from 'gofsh/dist';
@@ -26,21 +26,18 @@ export class FshConversionProvider implements TextDocumentContentProvider {
   }
 }
 
-export function createFSHURIfromFileUri(identifier: string): Uri {
-  return createURIfromFileUri(identifier, '.fsh');
+export function createFSHURIfromIdentifier(identifier: string): Uri {
+  return createURIfromIdentifier(identifier, '.fsh');
 }
 
-export function createJSONURIfromFileUri(identifier: string): Uri {
-  return createURIfromFileUri(identifier, '.json');
+export function createJSONURIfromIdentifier(identifier: string): Uri {
+  return createURIfromIdentifier(identifier, '.json');
 }
 
-function createURIfromFileUri(identifier: string, extension: string): Uri {
+function createURIfromIdentifier(identifier: string, extension: string): Uri {
   //Get the file name without the extension
   return Uri.parse(
-    FshConversionProvider.fshConversionProviderScheme +
-      ': (PREVIEW) ' +
-      identifier +
-      extension
+    FshConversionProvider.fshConversionProviderScheme + ': (PREVIEW) ' + identifier + extension
   );
 }
 
@@ -70,10 +67,11 @@ export async function findConfiguration(
 
     const dependencies = getDependenciesFromSushiConfig(parsedConfig);
     dependencies.forEach(dep => {
-      output.appendLine('Found dependency: ' + dep.packageId + '@' + dep.version);
+      output.appendLine('Found dependency: ' + dep.packageId + '#' + dep.version);
       conversionDependencies.push(dep.packageId + '@' + dep.version);
     });
   } else {
+    // TODO: Look for and use an ImplementationGuide JSON file if there is no sushi-config.yaml
     output.appendLine('No sushi-config.yaml file found.');
   }
 
@@ -207,11 +205,17 @@ export function findNamesInFSHResource(fshContent: string): string[] {
 }
 
 export function findFSHResourceInResult(fshResult: gofshClient.fshMap, resourceId: string): string {
-
   let resourceContent = fshResult.aliases + '\n\n';
 
   const resultKeys: string[] = [
-    'mappings', 'profiles', 'extensions', 'logicals', 'resources', 'codeSystems', 'valueSets', 'instances'
+    'mappings',
+    'profiles',
+    'extensions',
+    'logicals',
+    'resources',
+    'codeSystems',
+    'valueSets',
+    'instances'
   ];
 
   for (const [key, resourceMap] of Object.entries(fshResult)) {
@@ -225,4 +229,4 @@ export function findFSHResourceInResult(fshResult: gofshClient.fshMap, resourceI
   }
 
   return resourceContent;
-};
+}
