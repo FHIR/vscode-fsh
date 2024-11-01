@@ -3,6 +3,8 @@ import path, { dirname } from 'path';
 import YAML from 'yaml';
 import { SushiConfiguration } from './utils';
 import { gofshClient } from 'gofsh/dist';
+import { all } from 'axios';
+import { FHIRResource } from 'gofsh/dist/processor';
 
 export class FshConversionProvider implements TextDocumentContentProvider {
   static readonly fshConversionProviderScheme = 'fshfhirconversion';
@@ -43,7 +45,7 @@ function createURIfromIdentifier(identifier: string, extension: string): Uri {
 
 export async function findConfiguration(
   fileUri: Uri,
-  output: OutputChannel
+  output?: OutputChannel
 ): Promise<{ canonical: string; version: string; dependencies: string[]; sushiconfig: Uri }> {
   let fhirVersion = '4.0.1';
   let canonical = 'http://example.org';
@@ -51,7 +53,7 @@ export async function findConfiguration(
 
   const sushiConfigUri = await findMatchingSushiConfig(fileUri);
   if (sushiConfigUri) {
-    output.appendLine('Sushi-config.yaml file found: ' + sushiConfigUri.fsPath);
+    output !== undefined ? output.appendLine('Sushi-config.yaml file found: ' + sushiConfigUri.fsPath) : null;
 
     const configContents = await workspace.fs.readFile(sushiConfigUri);
 
@@ -60,19 +62,19 @@ export async function findConfiguration(
     const parsedConfig = YAML.parse(decodedConfig);
 
     fhirVersion = getVersionFromSushiConfig(parsedConfig);
-    output.appendLine('Found version: ' + fhirVersion);
+    output !== undefined ?  output.appendLine('Found version: ' + fhirVersion) : null;
 
     canonical = getCanonicalFromSushiConfig(parsedConfig);
-    output.appendLine('Found canonical: ' + canonical);
+    output !== undefined ?  output.appendLine('Found canonical: ' + canonical) : null;
 
     const dependencies = getDependenciesFromSushiConfig(parsedConfig);
     dependencies.forEach(dep => {
-      output.appendLine('Found dependency: ' + dep.packageId + '#' + dep.version);
+      output !== undefined ?  output.appendLine('Found dependency: ' + dep.packageId + '#' + dep.version) : null;
       conversionDependencies.push(dep.packageId + '@' + dep.version);
     });
   } else {
     // TODO: Look for and use an ImplementationGuide JSON file if there is no sushi-config.yaml
-    output.appendLine('No sushi-config.yaml file found.');
+    output !== undefined ?  output.appendLine('No sushi-config.yaml file found.') : null;
   }
 
   return {
@@ -118,7 +120,7 @@ function getVersionFromSushiConfig(config: SushiConfiguration): string {
         return null;
       }
     })
-    .find(version => /current|4\.0\.1|4\.[1-9]\d*\.\d+|5\.\d+\.\d+/.test(version));
+    .find(version => /current|4\.0\.1|4\.[1-9]\d*\.\d+|[56]\.\d+\.\d+/.test(version));
 
   return fhirVersion;
 }
@@ -183,24 +185,21 @@ export async function findMatchingJsonResourcesForProject(configFileUri: Uri): P
   return jsonResources;
 }
 
-export function findNamesInFSHResource(fshContent: string): string[] {
+export async function findNamesInFSHResource(fshResource: Uri): Promise<string[]> {
   const ids: string[] = [];
-  const lines = fshContent.split('\n');
+
+  const fshContent = await workspace.fs.readFile(fshResource);
+  const decoder = new TextDecoder();
+  const fshString = decoder.decode(fshContent);
+
+  const lines = fshString.split('\n');
   for (const line of lines) {
-    if (line.startsWith('CodeSystem:')) {
-      ids.push(line.split(' ')[1].trim());
-    } else if (line.startsWith('Instance:')) {
-      ids.push(line.split(' ')[1].trim());
-    } else if (line.startsWith('ValueSet:')) {
-      ids.push(line.split(' ')[1].trim());
-    } else if (line.startsWith('ConceptMap:')) {
-      ids.push(line.split(' ')[1].trim());
-    } else if (line.startsWith('Profile:')) {
-      ids.push(line.split(' ')[1].trim());
-    } else if (line.startsWith('Extension:')) {
-      ids.push(line.split(' ')[1].trim());
+    const match = line.match(/(Instance|Profile|Extension|ValueSet|CodeSystem|Logical|Resource)\s*:\s*(\S*)/);
+    if (match) {
+      ids.push(match[2]);
     }
   }
+
   return ids;
 }
 
@@ -230,3 +229,15 @@ export function findFSHResourceInResult(fshResult: gofshClient.fshMap, resourceI
 
   return resourceContent;
 }
+
+export function findJsonResourcesInResult(fshResult: any[], resourceIds: string[]): any[] {
+  const resources: any[] = [];
+  fshResult.forEach(resource => {
+    if (resourceIds.includes(resource.id) || (resource.name && resourceIds.includes(resource.name)) ) {
+      const formattedText = JSON.stringify(resource, null, 2);
+      resources.push(formattedText);
+    }
+  });
+  return resources;
+}
+

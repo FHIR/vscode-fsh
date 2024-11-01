@@ -27,12 +27,13 @@ import {
   findMatchingFSHResourcesForProject,
   findNamesInFSHResource,
   findMatchingJsonResourcesForProject,
-  findFSHResourceInResult
+  findFSHResourceInResult,
+  findJsonResourcesInResult,
 } from './FshConversionProvider';
 import { SushiBuildTaskProvider } from './SushiBuildTaskProvider';
 
 let fhirFSH: OutputChannel;
-let fshConversionProvider: FshConversionProvider;
+let conversionProviderInstance: FshConversionProvider;
 
 const FSH_MODE: DocumentFilter = { language: 'fsh', scheme: 'file' };
 // For FSH entity names and keywords, show the user FSH documentation.
@@ -114,17 +115,18 @@ export const DOCUMENTATION_VERSION_PATHS = new Map<string, string>([
 export function activate(context: ExtensionContext): {
   definitionProviderInstance: FshDefinitionProvider;
   completionProviderInstance: FshCompletionProvider;
+  conversionProviderInstance: FshConversionProvider;
 } {
   const definitionProviderInstance = new FshDefinitionProvider();
   const completionProviderInstance = new FshCompletionProvider(definitionProviderInstance);
-  fshConversionProvider = new FshConversionProvider();
+  conversionProviderInstance = new FshConversionProvider();
 
   context.subscriptions.push(
     languages.registerDefinitionProvider(FSH_MODE, definitionProviderInstance),
     languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance, '.'),
     workspace.registerTextDocumentContentProvider(
       FshConversionProvider.fshConversionProviderScheme,
-      fshConversionProvider
+      conversionProviderInstance
     )
   );
 
@@ -134,15 +136,13 @@ export function activate(context: ExtensionContext): {
     openFhirDocumentation(completionProviderInstance)
   );
 
-  commands.registerCommand('extension.fshToFHIRjson', async (...file) =>
-    conversionFSHtoFHIR(...file)
-  );
+  commands.registerCommand('extension.fshToFhir', async (...file) => conversionFSHtoFHIR(...file));
 
-  commands.registerCommand('extension.FHIRtoFSH', async (...file) => conversionFHIRtoFSH(...file));
+  commands.registerCommand('extension.fhirToFsh', async (...file) => conversionFHIRtoFSH(...file));
 
   completionProviderInstance.updateFhirEntities();
   tasks.registerTaskProvider('fsh', new SushiBuildTaskProvider());
-  return { definitionProviderInstance, completionProviderInstance };
+  return { definitionProviderInstance, completionProviderInstance, conversionProviderInstance };
 }
 
 export function deactivate() {
@@ -153,11 +153,7 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
   fhirFSH.clear();
   const fileUri: Uri = file[0];
 
-  const fshContent = await workspace.fs.readFile(fileUri);
-  const decoder = new TextDecoder();
-  const fshString = decoder.decode(fshContent);
-  const fshNames = findNamesInFSHResource(fshString);
-
+  const fshNames = await findNamesInFSHResource(fileUri);
   fshNames.forEach(name => {
     fhirFSH.appendLine('Found FSH resource in source: ' + name);
   });
@@ -166,8 +162,11 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
 
   let fshResourcesToConvert: string[];
 
-  // If there is a sushi-config there is a project wirh multiple FSH files (including the one we are converting)
+  // If there is a sushi-config there is a project with multiple FSH files (including the one we are converting)
   if (sushiConfigInfo.sushiconfig == null) {
+    const fshContent = await workspace.fs.readFile(fileUri);
+    const decoder = new TextDecoder();
+    const fshString = decoder.decode(fshContent);
     fshResourcesToConvert = [fshString];
   } else {
     fshResourcesToConvert = await findMatchingFSHResourcesForProject(sushiConfigInfo.sushiconfig);
@@ -202,16 +201,13 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
         fhirFSH.appendLine('Warning: ' + warning.message);
       });
 
-      result.fhir.forEach(fhirObject => {
-        if (fshNames.includes(fhirObject.id)) {
-          const formattedText = JSON.stringify(JSON.parse(JSON.stringify(fhirObject)), null, 2);
-          const uri = createJSONURIfromIdentifier(fhirObject.id);
-          fshConversionProvider.updated(formattedText, uri);
+      findJsonResourcesInResult(result.fhir, fshNames).forEach(jsonResource => {
+        const uri = createJSONURIfromIdentifier(JSON.parse(jsonResource).id);
+        conversionProviderInstance.updated(jsonResource, uri);
 
-          workspace.openTextDocument(uri).then(doc => {
-            window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
-          });
-        }
+        workspace.openTextDocument(uri).then(doc => {
+          window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
+        });
       });
     })
     .catch(error => {
@@ -232,7 +228,14 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
 
   const sushiConfigInfo = await findConfiguration(fileUri, fhirFSH);
 
-  const tobeConvertedJsonResource: string = fhirObjects.content.id;
+  let tobeConvertedJsonResource: string = '';
+  if (typeof fhirObjects.content.name === 'string') {
+    tobeConvertedJsonResource = fhirObjects.content.name;
+  }
+  else {
+    tobeConvertedJsonResource = fhirObjects.content.id;
+  }
+
   fhirFSH.appendLine('Found Json FHIR resource in source: ' + tobeConvertedJsonResource);
 
   // If there is a sushi-config there is a project with multiple Json files (including the one we are converting)
@@ -247,9 +250,6 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
       jsonResourcesToConvert.push(jsonResource);
     });
   }
-
-  // const myArray: any[] = [];
-  // myArray.push(fhirObjects.content);
 
   fhirFSH.appendLine('Converting FHIR to FSH...');
 
@@ -274,7 +274,7 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
       );
 
       const uri = createFSHURIfromIdentifier(tobeConvertedJsonResource);
-      fshConversionProvider.updated(fshResult as string, uri);
+      conversionProviderInstance.updated(fshResult as string, uri);
 
       workspace.openTextDocument(uri).then(doc => {
         window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });

@@ -55,12 +55,12 @@
         "title": "Open FHIR Documentation"
       },
       {
-        "command": "extension.fshToFHIRjson",
+        "command": "extension.fshToFhir",
         "title": "FSH to FHIR JSON",
         "category": "vscode-fsh"
       },
       {
-        "command": "extension.FHIRtoFSH",
+        "command": "extension.fhirToFsh",
         "title": "FHIR to FSH",
         "category": "vscode-fsh"
       }
@@ -75,12 +75,12 @@
       ],
       "explorer/context": [
         {
-          "command": "extension.fshToFHIRjson",
+          "command": "extension.fshToFhir",
           "group": "1_modification",
           "when": "resourceExtname == .fsh"
         },
         {
-          "command": "extension.FHIRtoFSH",
+          "command": "extension.fhirToFsh",
           "group": "1_modification",
           "when": "resourceExtname == .json || resourceExtname == .xml"
         }

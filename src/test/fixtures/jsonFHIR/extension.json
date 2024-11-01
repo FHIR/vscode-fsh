@@ -1,0 +1,33 @@
+{
+    "resourceType": "StructureDefinition",
+    "id": "IceCreamExtension",
+    "url": "http://example.org/StructureDefinition/IceCreamExtension",
+    "version": "1.0.0",
+    "name": "IceCreamExtension",
+    "fhirVersion": "4.0.1",
+    "kind": "complex-type",
+    "abstract": false,
+    "context": [
+      {
+        "type": "element",
+        "expression": "Element"
+      }
+    ],
+    "type": "Extension",
+    "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Extension",
+    "derivation": "constraint",
+    "differential": {
+      "element": [
+        {
+          "id": "Extension.extension",
+          "path": "Extension.extension",
+          "max": "0"
+        },
+        {
+          "id": "Extension.url",
+          "path": "Extension.url",
+          "fixedUri": "http://example.org/StructureDefinition/IceCreamExtension"
+        }
+      ]
+    }
+  }

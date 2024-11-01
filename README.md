@@ -92,12 +92,14 @@ To run the SUSHI Build task, use VS Code's Run Task feature. The "Run Task" feat
 
 Note that you must have SUSHI installed locally in order for the task to run successfully. See [SUSHI Installation instructions](https://fshschool.org/docs/sushi/installation/) for help installing.
 
-## Conversion from FHIR Json to FSH and from FSH to FHIR Json
+## Conversion from FHIR JSON to FSH and from FSH to FHIR JSON
 
-Right-clicking on a `.fsh` file and then selecting the option "FSH to FHIR JSON" from the context menu will convert this FSH file to a FHIR JSON file. The FHIR JSON file will be created in memory in a separate file tab.
+Right-clicking on a `.fsh` file and then selecting the option "FSH to FHIR JSON" from the context menu will convert this FSH file to one or more FHIR JSON files. The resulting FHIR JSON files will be created in memory and displayed in separate file tabs.
 
-Right-clicking on a `.json` file that contains a FHIR resource and then selecting the option "FHIR to FSH" from the context menu will convert this JSON FHIR file to a FSH file. The FSH file will be created in memory in a separate file tab.
+Right-clicking on a `.json` file that contains a FHIR resource and then selecting the option "FHIR to FSH" from the context menu will convert this JSON FHIR file to a FSH file. The FSH file will be created in memory and displayed in a separate file tab.
 
+Note that the "FSH to FHIR JSON" and "FHIR to FSH" features use this extension's built-in versions of SUSHI and GoFSH. These may not be the most recently released versions and may not correspond to the versions you have locally installed.
+Note that the "FSH to FHIR JSON" and "FHIR to FSH" features use this extension's built-in versions of SUSHI and GoFSH. These may not be the most recently released versions and may not correspond to the versions you have locally installed.
 ## Instructions for Developers
 
 ### Intro to FSH VS Code Extension Development

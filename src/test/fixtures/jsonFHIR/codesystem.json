@@ -1,0 +1,29 @@
+{
+    "resourceType": "CodeSystem",
+    "content": "complete",
+    "name": "MyCodeSystem",
+    "id": "my-code-system",
+    "title": "My Code System",
+    "description": "This is the good one.",
+    "version": "1.0.0",
+    "url": "http://example.org/CodeSystem/my-code-system",
+    "concept": [
+      {
+        "code": "alpaca",
+        "display": "Alpaca"
+      },
+      {
+        "code": "crocodile",
+        "display": "Crocodile"
+      },
+      {
+        "code": "alligator",
+        "display": "Alligator"
+      },
+      {
+        "code": "bear",
+        "display": "Bear"
+      }
+    ],
+    "count": 4
+  }
