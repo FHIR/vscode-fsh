@@ -28,7 +28,7 @@ import {
   findNamesInFSHResource,
   findMatchingJsonResourcesForProject,
   findFSHResourceInResult,
-  findJsonResourcesInResult,
+  findJsonResourcesInResult
 } from './FshConversionProvider';
 import { SushiBuildTaskProvider } from './SushiBuildTaskProvider';
 
@@ -231,8 +231,7 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
   let tobeConvertedJsonResource: string = '';
   if (typeof fhirObjects.content.name === 'string') {
     tobeConvertedJsonResource = fhirObjects.content.name;
-  }
-  else {
+  } else {
     tobeConvertedJsonResource = fhirObjects.content.id;
   }
 

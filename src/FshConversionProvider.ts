@@ -3,8 +3,6 @@ import path, { dirname } from 'path';
 import YAML from 'yaml';
 import { SushiConfiguration } from './utils';
 import { gofshClient } from 'gofsh/dist';
-import { all } from 'axios';
-import { FHIRResource } from 'gofsh/dist/processor';
 
 export class FshConversionProvider implements TextDocumentContentProvider {
   static readonly fshConversionProviderScheme = 'fshfhirconversion';
@@ -53,7 +51,9 @@ export async function findConfiguration(
 
   const sushiConfigUri = await findMatchingSushiConfig(fileUri);
   if (sushiConfigUri) {
-    output !== undefined ? output.appendLine('Sushi-config.yaml file found: ' + sushiConfigUri.fsPath) : null;
+    if (output !== undefined) {
+      output.appendLine('Sushi-config.yaml file found: ' + sushiConfigUri.fsPath);
+    }
 
     const configContents = await workspace.fs.readFile(sushiConfigUri);
 
@@ -62,19 +62,27 @@ export async function findConfiguration(
     const parsedConfig = YAML.parse(decodedConfig);
 
     fhirVersion = getVersionFromSushiConfig(parsedConfig);
-    output !== undefined ?  output.appendLine('Found version: ' + fhirVersion) : null;
+    if (output !== undefined) {
+      output.appendLine('Found version: ' + fhirVersion);
+    }
 
     canonical = getCanonicalFromSushiConfig(parsedConfig);
-    output !== undefined ?  output.appendLine('Found canonical: ' + canonical) : null;
+    if (output !== undefined) {
+      output.appendLine('Found canonical: ' + canonical);
+    }
 
     const dependencies = getDependenciesFromSushiConfig(parsedConfig);
     dependencies.forEach(dep => {
-      output !== undefined ?  output.appendLine('Found dependency: ' + dep.packageId + '#' + dep.version) : null;
+      if (output !== undefined) {
+        output.appendLine('Found dependency: ' + dep.packageId + '#' + dep.version);
+      }
       conversionDependencies.push(dep.packageId + '@' + dep.version);
     });
   } else {
     // TODO: Look for and use an ImplementationGuide JSON file if there is no sushi-config.yaml
-    output !== undefined ?  output.appendLine('No sushi-config.yaml file found.') : null;
+    if (output !== undefined) {
+      output.appendLine('No sushi-config.yaml file found.');
+    }
   }
 
   return {
@@ -194,7 +202,9 @@ export async function findNamesInFSHResource(fshResource: Uri): Promise<string[]
 
   const lines = fshString.split('\n');
   for (const line of lines) {
-    const match = line.match(/(Instance|Profile|Extension|ValueSet|CodeSystem|Logical|Resource)\s*:\s*(\S*)/);
+    const match = line.match(
+      /(Instance|Profile|Extension|ValueSet|CodeSystem|Logical|Resource)\s*:\s*(\S*)/
+    );
     if (match) {
       ids.push(match[2]);
     }
@@ -233,11 +243,13 @@ export function findFSHResourceInResult(fshResult: gofshClient.fshMap, resourceI
 export function findJsonResourcesInResult(fshResult: any[], resourceIds: string[]): any[] {
   const resources: any[] = [];
   fshResult.forEach(resource => {
-    if (resourceIds.includes(resource.id) || (resource.name && resourceIds.includes(resource.name)) ) {
+    if (
+      resourceIds.includes(resource.id) ||
+      (resource.name && resourceIds.includes(resource.name))
+    ) {
       const formattedText = JSON.stringify(resource, null, 2);
       resources.push(formattedText);
     }
   });
   return resources;
 }
-

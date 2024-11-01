@@ -10,7 +10,7 @@ import {
   createJSONURIfromIdentifier,
   findNamesInFSHResource,
   findJsonResourcesInResult,
-  findConfiguration,
+  findConfiguration
 } from '../../FshConversionProvider';
 
 chai.use(spies);
@@ -66,82 +66,59 @@ suite('FshConversionProvider', () => {
       const fshURI = await vscode.workspace.findFiles('codesystems.fsh');
       const fshName = ['MyCodeSystem', 'AnotherCodeSystem'];
 
-      assert.deepStrictEqual(
-        await findNamesInFSHResource(fshURI[0]),
-        fshName
-      );
+      assert.deepStrictEqual(await findNamesInFSHResource(fshURI[0]), fshName);
     });
 
     test('should create the correct FSH Resource name from Instance', async () => {
       const fshURI = await vscode.workspace.findFiles('instances.fsh');
       const fshName = ['ThisOneObservation'];
 
-      assert.deepStrictEqual(
-        await findNamesInFSHResource(fshURI[0]),
-        fshName
-      );
-    }); 
+      assert.deepStrictEqual(await findNamesInFSHResource(fshURI[0]), fshName);
+    });
 
     test('should create the correct FSH Resource name from Valueset', async () => {
       const fshURI = await vscode.workspace.findFiles('valuesets.fsh');
       const fshName = ['MyValueSet', 'ReusedName'];
 
-      assert.deepStrictEqual(
-        await findNamesInFSHResource(fshURI[0]),
-        fshName
-      );
+      assert.deepStrictEqual(await findNamesInFSHResource(fshURI[0]), fshName);
     });
 
     test('should create the correct FSH Resource name from Logical', async () => {
       const fshURI = await vscode.workspace.findFiles('logicalModels.fsh');
       const fshName = ['Employee', 'Employee-PT'];
 
-      assert.deepStrictEqual(
-        await findNamesInFSHResource(fshURI[0]),
-        fshName
-      );
+      assert.deepStrictEqual(await findNamesInFSHResource(fshURI[0]), fshName);
     });
 
     test('should create the correct FSH Resource name from Resource', async () => {
       const fshURI = await vscode.workspace.findFiles('resources.fsh');
       const fshName = ['Laptop'];
 
-      assert.deepStrictEqual(
-        await findNamesInFSHResource(fshURI[0]),
-        fshName
-      );
+      assert.deepStrictEqual(await findNamesInFSHResource(fshURI[0]), fshName);
     });
 
     test('should create the correct FSH Resource name from Profile', async () => {
       const fshURI = await vscode.workspace.findFiles('profiles/profiles1.fsh');
       const fshName = ['MyObservation', 'MyPatient', 'ReusedName'];
 
-      assert.deepStrictEqual(
-        await findNamesInFSHResource(fshURI[0]),
-        fshName
-      );
+      assert.deepStrictEqual(await findNamesInFSHResource(fshURI[0]), fshName);
     });
 
     test('should create the correct FSH Resource name from Extension', async () => {
       const fshURI = await vscode.workspace.findFiles('extensions.fsh');
       const fshName = ['IceCreamExtension'];
 
-      assert.deepStrictEqual(
-        await findNamesInFSHResource(fshURI[0]),
-        fshName
-      );
+      assert.deepStrictEqual(await findNamesInFSHResource(fshURI[0]), fshName);
     });
-
   });
 
   suite('FindResourcesInJSONResult', () => {
- 
-    let jsonResources: any[] = [];
+    const jsonResources: any[] = [];
 
     before(async () => {
       //Read the files
       const jsonFHIR = await vscode.workspace.findFiles('jsonFHIR/*.json');
-      jsonFHIR.forEach(async (file) => {
+      jsonFHIR.forEach(async file => {
         jsonResources.push(JSON.parse(fs.readFileSync(file.fsPath, 'utf8')));
       });
     });
@@ -167,7 +144,6 @@ suite('FshConversionProvider', () => {
         JSON.parse(fs.readFileSync(csURI[0].fsPath, 'utf8'))
       );
     });
-
   });
 
   suite('ReadSushiConfiguration', () => {
@@ -179,12 +155,22 @@ suite('FshConversionProvider', () => {
 
       const expectedDependencies = ['hl7.fhir.us.core@3.1.0', 'hl7.fhir.uv.vhdir@current'];
 
-      assert.strictEqual(sushiConfig.canonical, 'http://hl7.org/fhir/sushi-test', 'Canonical URL is incorrect');
-      assert.deepStrictEqual(sushiConfig.dependencies, expectedDependencies, 'Dependencies are incorrect');
-      assert.strictEqual(sushiConfig.sushiconfig.fsPath, sushiConfigUri[0].fsPath, 'Sushi-config file path is incorrect');
-      assert.strictEqual(sushiConfig.version, '4.0.1', 'FHIR Version is incorrect');	
-    }); 
-
+      assert.strictEqual(
+        sushiConfig.canonical,
+        'http://hl7.org/fhir/sushi-test',
+        'Canonical URL is incorrect'
+      );
+      assert.deepStrictEqual(
+        sushiConfig.dependencies,
+        expectedDependencies,
+        'Dependencies are incorrect'
+      );
+      assert.strictEqual(
+        sushiConfig.sushiconfig.fsPath,
+        sushiConfigUri[0].fsPath,
+        'Sushi-config file path is incorrect'
+      );
+      assert.strictEqual(sushiConfig.version, '4.0.1', 'FHIR Version is incorrect');
+    });
   });
-
 });
