@@ -16,14 +16,23 @@ export type SushiConfiguration = {
   };
 };
 
-export function collectFshFilesForPath(filepath: string, fshFiles: string[]): void {
-  const stats = fs.statSync(filepath);
+export function collectFshFilesForPath(
+  filepath: string,
+  fshFiles: string[],
+  visitedPaths: Set<string> = new Set()
+) {
+  const realPath = fs.realpathSync(filepath);
+  if (visitedPaths.has(realPath)) {
+    return;
+  }
+  visitedPaths.add(realPath);
+  const stats = fs.statSync(realPath);
   if (stats.isDirectory()) {
-    fs.readdirSync(filepath).forEach(file => {
-      collectFshFilesForPath(path.join(filepath, file), fshFiles);
+    fs.readdirSync(realPath).forEach(file => {
+      collectFshFilesForPath(path.join(realPath, file), fshFiles, visitedPaths);
     });
   } else if (filepath.endsWith('.fsh')) {
-    fshFiles.push(filepath);
+    fshFiles.push(realPath);
   }
 }
 
