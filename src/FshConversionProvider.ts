@@ -3,6 +3,7 @@ import path, { dirname } from 'path';
 import YAML from 'yaml';
 import { SushiConfiguration } from './utils';
 import { gofshClient } from 'gofsh/dist';
+import os from 'os';
 
 export class FshConversionProvider implements TextDocumentContentProvider {
   static readonly fshConversionProviderScheme = 'fshfhirconversion';
@@ -214,8 +215,6 @@ export async function findNamesInFSHResource(fshResource: Uri): Promise<string[]
 }
 
 export function findFSHResourceInResult(fshResult: gofshClient.fshMap, resourceId: string): string {
-  let resourceContent = fshResult.aliases + '\n\n';
-
   const resultKeys: string[] = [
     'mappings',
     'profiles',
@@ -227,6 +226,7 @@ export function findFSHResourceInResult(fshResult: gofshClient.fshMap, resourceI
     'instances'
   ];
 
+  let resourceContent = '';
   for (const [key, resourceMap] of Object.entries(fshResult)) {
     if (resultKeys.includes(key)) {
       (resourceMap as gofshClient.ResourceMap).forEach((value, id) => {
@@ -235,6 +235,14 @@ export function findFSHResourceInResult(fshResult: gofshClient.fshMap, resourceI
         }
       });
     }
+  }
+
+  const usedAliasLines = fshResult.aliases.split(/\r?\n/).filter(line => {
+    const match = line.match(/^Alias:\s+([^\s]+)\s+/);
+    return match && resourceContent.indexOf(match[1]) >= 0;
+  });
+  if (usedAliasLines.length) {
+    resourceContent = usedAliasLines.join(os.EOL) + `${os.EOL}${os.EOL}` + resourceContent;
   }
 
   return resourceContent;
