@@ -169,6 +169,7 @@ export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
     const fshString = decoder.decode(fshContent);
     fshResourcesToConvert = [fshString];
   } else {
+    fhirFSH.appendLine('Searching for FSH files in the input/fsh folder of the project.');
     fshResourcesToConvert = await findMatchingFSHResourcesForProject(sushiConfigInfo.sushiconfig);
   }
 

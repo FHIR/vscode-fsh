@@ -161,7 +161,7 @@ function getDependenciesFromSushiConfig(
 export async function findMatchingFSHResourcesForProject(configFileUri: Uri): Promise<string[]> {
   const fshResources: string[] = [];
   const configdir = dirname(configFileUri.fsPath) + path.sep;
-  const files: Uri[] = await workspace.findFiles('**/*.{fsh}');
+  const files: Uri[] = await workspace.findFiles('**/input/fsh/**/*.{fsh}');
 
   for (const file of files) {
     if (file.fsPath.startsWith(configdir)) {
