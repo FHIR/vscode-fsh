@@ -224,7 +224,7 @@ export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
   fhirFSH.clear();
 
   const fileUri: Uri = file[0];
-  const fhirObjects = gofshUtils.readJSONorXML(fileUri.path);
+  const fhirObjects = gofshUtils.readJSONorXML(fileUri.fsPath);
 
   const sushiConfigInfo = await findConfiguration(fileUri, fhirFSH);
 
