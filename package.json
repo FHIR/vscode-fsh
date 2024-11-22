@@ -12,7 +12,7 @@
     "url": "https://github.com/standardhealth/vscode-language-fsh"
   },
   "engines": {
-    "vscode": "^1.92.0"
+    "vscode": "^1.94.0"
   },
   "activationEvents": [
     "onLanguage:fsh",
@@ -53,6 +53,16 @@
       {
         "command": "extension.openFhir",
         "title": "Open FHIR Documentation"
+      },
+      {
+        "command": "extension.fshToFhir",
+        "title": "FSH to FHIR JSON",
+        "category": "vscode-fsh"
+      },
+      {
+        "command": "extension.fhirToFsh",
+        "title": "FHIR to FSH",
+        "category": "vscode-fsh"
       }
     ],
     "menus": {
@@ -61,6 +71,18 @@
           "command": "extension.openFhir",
           "group": "navigation",
           "when": "editorLangId == fsh"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "extension.fshToFhir",
+          "group": "1_modification",
+          "when": "resourceExtname == .fsh"
+        },
+        {
+          "command": "extension.fhirToFsh",
+          "group": "1_modification",
+          "when": "resourceExtname == .json || resourceExtname == .xml"
         }
       ]
     },
@@ -100,7 +122,7 @@
         }
       }
     ]
-  },
+  }, 
   "scripts": {
     "build": "tsc -p ./",
     "build:watch": "tsc -watch -p ./",
@@ -143,6 +165,8 @@
     "antlr4": "~4.13.2",
     "axios": "^1.7.7",
     "semver": "^7.6.3",
-    "yaml": "^2.6.0"
+    "yaml": "^2.6.0",
+    "fsh-sushi": "3.12.0",
+    "gofsh": "2.3.1"
   }
 }

@@ -6,15 +6,34 @@ import {
   ExtensionContext,
   DocumentFilter,
   TextDocument,
+  OutputChannel,
+  workspace,
   Position,
   env,
-  Uri
+  Uri,
+  ViewColumn
 } from 'vscode';
 
 import axios from 'axios';
+import { fhirtypes, sushiClient } from 'fsh-sushi';
+import { utils as gofshUtils, gofshClient } from 'gofsh/dist';
 import { FshDefinitionProvider } from './FshDefinitionProvider';
 import { FshCompletionProvider } from './FshCompletionProvider';
+import {
+  FshConversionProvider,
+  createFSHURIfromIdentifier,
+  createJSONURIfromIdentifier,
+  findConfiguration,
+  findMatchingFSHResourcesForProject,
+  findNamesInFSHResource,
+  findMatchingJsonResourcesForProject,
+  findFSHResourceInResult,
+  findJsonResourcesInResult
+} from './FshConversionProvider';
 import { SushiBuildTaskProvider } from './SushiBuildTaskProvider';
+
+let fhirFSH: OutputChannel;
+let conversionProviderInstance: FshConversionProvider;
 
 const FSH_MODE: DocumentFilter = { language: 'fsh', scheme: 'file' };
 // For FSH entity names and keywords, show the user FSH documentation.
@@ -96,19 +115,179 @@ export const DOCUMENTATION_VERSION_PATHS = new Map<string, string>([
 export function activate(context: ExtensionContext): {
   definitionProviderInstance: FshDefinitionProvider;
   completionProviderInstance: FshCompletionProvider;
+  conversionProviderInstance: FshConversionProvider;
 } {
   const definitionProviderInstance = new FshDefinitionProvider();
   const completionProviderInstance = new FshCompletionProvider(definitionProviderInstance);
+  conversionProviderInstance = new FshConversionProvider();
+
   context.subscriptions.push(
     languages.registerDefinitionProvider(FSH_MODE, definitionProviderInstance),
-    languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance, '.')
+    languages.registerCompletionItemProvider(FSH_MODE, completionProviderInstance, '.'),
+    workspace.registerTextDocumentContentProvider(
+      FshConversionProvider.fshConversionProviderScheme,
+      conversionProviderInstance
+    )
   );
+
+  fhirFSH = window.createOutputChannel('FHIR <=> FSH');
+
   commands.registerCommand('extension.openFhir', () =>
     openFhirDocumentation(completionProviderInstance)
   );
+
+  commands.registerCommand('extension.fshToFhir', async (...file) => conversionFSHtoFHIR(...file));
+
+  commands.registerCommand('extension.fhirToFsh', async (...file) => conversionFHIRtoFSH(...file));
+
   completionProviderInstance.updateFhirEntities();
   tasks.registerTaskProvider('fsh', new SushiBuildTaskProvider());
-  return { definitionProviderInstance, completionProviderInstance };
+  return { definitionProviderInstance, completionProviderInstance, conversionProviderInstance };
+}
+
+export function deactivate() {
+  fhirFSH.dispose();
+}
+
+export async function conversionFSHtoFHIR(...file: any[]): Promise<void> {
+  fhirFSH.clear();
+  const fileUri: Uri = file[0];
+
+  const fshNames = await findNamesInFSHResource(fileUri);
+  fshNames.forEach(name => {
+    fhirFSH.appendLine('Found FSH resource in source: ' + name);
+  });
+
+  const sushiConfigInfo = await findConfiguration(fileUri, fhirFSH);
+
+  let fshResourcesToConvert: string[];
+
+  // If there is a sushi-config there is a project with multiple FSH files (including the one we are converting)
+  if (sushiConfigInfo.sushiconfig == null) {
+    const fshContent = await workspace.fs.readFile(fileUri);
+    const decoder = new TextDecoder();
+    const fshString = decoder.decode(fshContent);
+    fshResourcesToConvert = [fshString];
+  } else {
+    fhirFSH.appendLine('Searching for FSH files in the input/fsh folder of the project.');
+    fshResourcesToConvert = await findMatchingFSHResourcesForProject(sushiConfigInfo.sushiconfig);
+  }
+
+  const fshtoFHIRDependencies: fhirtypes.ImplementationGuideDependsOn[] = [];
+
+  sushiConfigInfo.dependencies.forEach(dependency => {
+    const newDependency: fhirtypes.ImplementationGuideDependsOn = {
+      packageId: dependency.split('@')[0],
+      version: dependency.split('@')[1]
+    };
+    fshtoFHIRDependencies.push(newDependency);
+  });
+
+  const dependenciesParameter =
+    fshtoFHIRDependencies.length === 0 ? undefined : fshtoFHIRDependencies;
+
+  fhirFSH.appendLine('Converting FSH to FHIR...');
+  sushiClient
+    .fshToFhir(fshResourcesToConvert, {
+      canonical: sushiConfigInfo.canonical,
+      fhirVersion: sushiConfigInfo.version,
+      dependencies: dependenciesParameter
+    })
+    .then(result => {
+      result.errors.forEach(error => {
+        fhirFSH.appendLine('Error: ' + error.message);
+      });
+
+      result.warnings.forEach(warning => {
+        fhirFSH.appendLine('Warning: ' + warning.message);
+      });
+
+      findJsonResourcesInResult(result.fhir, fshNames).forEach(jsonResource => {
+        const uri = createJSONURIfromIdentifier(JSON.parse(jsonResource).id);
+        conversionProviderInstance.updated(jsonResource, uri);
+
+        workspace.openTextDocument(uri).then(doc => {
+          window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
+        });
+      });
+    })
+    .catch(error => {
+      fhirFSH.appendLine('Error: ' + error.message);
+    })
+    .finally(() => {
+      fhirFSH.appendLine('Finished!');
+    });
+
+  fhirFSH.show();
+}
+
+export async function conversionFHIRtoFSH(...file: any[]): Promise<void> {
+  fhirFSH.clear();
+
+  const fileUri: Uri = file[0];
+  const fhirObjects = gofshUtils.readJSONorXML(fileUri.fsPath);
+
+  const sushiConfigInfo = await findConfiguration(fileUri, fhirFSH);
+
+  let tobeConvertedJsonResource: string = '';
+  if (typeof fhirObjects.content.name === 'string') {
+    tobeConvertedJsonResource = fhirObjects.content.name;
+  } else {
+    tobeConvertedJsonResource = fhirObjects.content.id;
+  }
+
+  fhirFSH.appendLine('Found Json FHIR resource in source: ' + tobeConvertedJsonResource);
+
+  // If there is a sushi-config there is a project with multiple Json files (including the one we are converting)
+  const jsonResourcesToConvert: any[] = [];
+  if (sushiConfigInfo.sushiconfig == null) {
+    jsonResourcesToConvert.push(fhirObjects.content);
+  } else {
+    const jsonResources: string[] = await findMatchingJsonResourcesForProject(
+      sushiConfigInfo.sushiconfig
+    );
+    jsonResources.forEach(jsonResource => {
+      jsonResourcesToConvert.push(jsonResource);
+    });
+  }
+
+  fhirFSH.appendLine('Converting FHIR to FSH...');
+
+  gofshClient
+    .fhirToFsh(jsonResourcesToConvert, {
+      style: 'map',
+      indent: true,
+      dependencies: sushiConfigInfo.dependencies
+    })
+    .then(result => {
+      result.errors.forEach(error => {
+        fhirFSH.appendLine('Error: ' + error.message);
+      });
+
+      result.warnings.forEach(warning => {
+        fhirFSH.appendLine('Warning: ' + warning.message);
+      });
+
+      const fshResult: string = findFSHResourceInResult(
+        result.fsh as gofshClient.fshMap,
+        tobeConvertedJsonResource
+      );
+
+      const uri = createFSHURIfromIdentifier(tobeConvertedJsonResource);
+      conversionProviderInstance.updated(fshResult as string, uri);
+
+      workspace.openTextDocument(uri).then(doc => {
+        window.showTextDocument(doc, { preview: false, viewColumn: ViewColumn.Active });
+      });
+    })
+    .catch(error => {
+      fhirFSH.appendLine('Error: ' + error.message);
+    })
+    .finally(() => {
+      fhirFSH.appendLine('Finished!');
+    });
+
+  fhirFSH.show();
 }
 
 export async function openFhirDocumentation(

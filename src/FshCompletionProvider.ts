@@ -18,6 +18,7 @@ import YAML from 'yaml';
 import path from 'path';
 import os from 'os';
 import { maxSatisfying } from 'semver';
+import { SushiConfiguration } from './utils';
 
 export type FhirContents = {
   resourceType: string;
@@ -35,19 +36,6 @@ export type ElementInfo = {
 export type EnhancedCompletionItem = CompletionItem & {
   elements?: ElementInfo[];
   type?: string;
-};
-
-type DependencyDetails = {
-  id: string;
-  uri: string;
-  version: string | number;
-};
-
-type SushiConfiguration = {
-  fhirVersion?: string | string[];
-  dependencies?: {
-    [key: string]: string | number | DependencyDetails;
-  };
 };
 
 type EntitySet = {
