@@ -2,7 +2,7 @@
   "name": "vscode-fsh",
   "displayName": "HL7 FHIR Shorthand",
   "description": "FHIR Shorthand (FSH) Language Support by HL7",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "author": "Health Level Seven International",
   "license": "Apache-2.0",
   "publisher": "FHIR-Shorthand",
@@ -122,7 +122,7 @@
         }
       }
     ]
-  }, 
+  },
   "scripts": {
     "build": "tsc -p ./",
     "build:watch": "tsc -watch -p ./",
