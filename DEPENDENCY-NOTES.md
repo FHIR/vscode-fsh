@@ -4,3 +4,4 @@ The `npm outdated` command reports some dependencies as outdated. They are not b
 
 - `@types/node`: Don't update until Node 22 is LTS version (currently Node 20).
 - `chai`, `@types/chai`: Chai v5 is an esmodule.
+- `nock`: Unit tests fail when using Nock v14 (interceptors aren't working; needs further investigation)
